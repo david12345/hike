@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hike — Essential features for hiking</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --green-dark:   #1B5E20;
+      --green-main:   #2E7D32;
+      --green-mid:    #388E3C;
+      --green-light:  #43A047;
+      --green-pale:   #C8E6C9;
+      --white:        #FFFFFF;
+      --off-white:    #F9FBF9;
+      --text-dark:    #1A1A1A;
+      --text-muted:   #555;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--off-white);
+      color: var(--text-dark);
+      line-height: 1.6;
+    }
+
+    /* ─── HERO ─────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(160deg, var(--green-dark) 0%, var(--green-main) 55%, var(--green-light) 100%);
+      color: var(--white);
+      text-align: center;
+      padding: 72px 24px 80px;
+    }
+
+    .hero-icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 28px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+      margin-bottom: 28px;
+      object-fit: contain;
+      background: var(--green-dark);
+    }
+
+    .hero h1 {
+      font-size: clamp(2.4rem, 7vw, 4rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+
+    .hero .tagline {
+      font-size: clamp(1rem, 3.5vw, 1.35rem);
+      opacity: 0.88;
+      max-width: 480px;
+      margin: 0 auto 36px;
+    }
+
+    .btn-download {
+      display: inline-block;
+      background: var(--white);
+      color: var(--green-dark);
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 15px 36px;
+      border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-download:hover,
+    .btn-download:focus {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      outline: none;
+    }
+
+    .btn-download svg {
+      vertical-align: middle;
+      margin-right: 8px;
+      margin-top: -2px;
+    }
+
+    .badge-row {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.3);
+      letter-spacing: 0.03em;
+    }
+
+    /* ─── SECTION WRAPPER ─────────────────────────────────── */
+    section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 64px 24px;
+    }
+
+    section h2 {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 700;
+      color: var(--green-main);
+      margin-bottom: 36px;
+      text-align: center;
+    }
+
+    /* ─── FEATURES ────────────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 28px 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      border-top: 4px solid var(--green-main);
+    }
+
+    .feature-card .icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .feature-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--green-dark);
+    }
+
+    .feature-card p {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+    }
+
+    /* ─── SCREENSHOTS ─────────────────────────────────────── */
+    .screenshots-section {
+      background: var(--green-pale);
+      border-radius: 0;
+      padding: 64px 24px;
+    }
+
+    .screenshots-section-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .screenshots-section h2 {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 700;
+      color: var(--green-main);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .screenshots-placeholder {
+      background: rgba(255,255,255,0.6);
+      border: 2px dashed var(--green-mid);
+      border-radius: 16px;
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--green-dark);
+      font-size: 0.95rem;
+    }
+
+    .screenshots-placeholder p:first-child {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+    }
+
+    /* ─── HOW IT WORKS ────────────────────────────────────── */
+    .steps {
+      counter-reset: step;
+      display: grid;
+      gap: 20px;
+    }
+
+    .step {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 22px 24px 22px 72px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      position: relative;
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--green-main);
+      color: var(--white);
+      font-weight: 700;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      margin-bottom: 4px;
+    }
+
+    .step p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* ─── OPEN SOURCE ─────────────────────────────────────── */
+    .oss-section {
+      background: var(--white);
+      border-left: 5px solid var(--green-main);
+      border-radius: 0 14px 14px 0;
+      padding: 28px 28px;
+      max-width: 700px;
+      margin: 0 auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    .oss-section h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      margin-bottom: 8px;
+    }
+
+    .oss-section p {
+      font-size: 0.93rem;
+      color: var(--text-muted);
+    }
+
+    .oss-section a {
+      color: var(--green-main);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .oss-section a:hover {
+      text-decoration: underline;
+    }
+
+    /* ─── DOWNLOAD CTA ────────────────────────────────────── */
+    .cta-section {
+      background: linear-gradient(135deg, var(--green-main), var(--green-dark));
+      color: var(--white);
+      text-align: center;
+      padding: 64px 24px;
+    }
+
+    .cta-section h2 {
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .cta-section p {
+      opacity: 0.85;
+      margin-bottom: 28px;
+      font-size: 1rem;
+    }
+
+    .btn-download-white {
+      display: inline-block;
+      background: var(--white);
+      color: var(--green-dark);
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 15px 36px;
+      border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-download-white:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .btn-download-white svg {
+      vertical-align: middle;
+      margin-right: 8px;
+      margin-top: -2px;
+    }
+
+    /* ─── FOOTER ──────────────────────────────────────────── */
+    footer {
+      background: var(--green-dark);
+      color: rgba(255,255,255,0.65);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 0.85rem;
+      line-height: 1.8;
+    }
+
+    footer a {
+      color: var(--green-pale);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    footer .footer-links {
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    /* ─── RESPONSIVE TWEAKS ───────────────────────────────── */
+    @media (max-width: 480px) {
+      .hero {
+        padding: 56px 20px 64px;
+      }
+
+      .step {
+        padding: 20px 20px 20px 64px;
+      }
+
+      .step::before {
+        left: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <header class="hero">
+    <img src="features/app_icon.png" alt="Hike app icon" class="hero-icon"
+         onerror="this.style.display='none'">
+    <h1>Hike</h1>
+    <p class="tagline">Essential features for hiking</p>
+    <a class="btn-download"
+       href="https://github.com/david12345/hike/releases/latest/download/hike.apk"
+       download>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M5 20h14v-2H5v2zm7-18l-5 5h3v6h4v-6h3L12 2z"/>
+      </svg>
+      Download APK
+    </a>
+    <div class="badge-row">
+      <span class="badge">Free</span>
+      <span class="badge">No account required</span>
+      <span class="badge">No ads</span>
+      <span class="badge">Open Source</span>
+    </div>
+  </header>
+
+  <!-- FEATURES -->
+  <section aria-labelledby="features-heading">
+    <h2 id="features-heading">What's inside</h2>
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <span class="icon" aria-hidden="true">📍</span>
+        <h3>GPS Tracking</h3>
+        <p>Record your route with high-accuracy GPS. See real-time distance, elapsed time, altitude, and point count as you hike.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="icon" aria-hidden="true">🗺</span>
+        <h3>Live Map</h3>
+        <p>Watch your position update on an OpenStreetMap or OpenTopoMap base layer. Route polyline drawn in real time.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="icon" aria-hidden="true">📶</span>
+        <h3>Offline Tiles</h3>
+        <p>Map tiles are cached to disk for 30 days so you can follow your route without a mobile data connection.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="icon" aria-hidden="true">🧭</span>
+        <h3>Compass</h3>
+        <p>Live compass rose with degree readout at the center. Knows your cardinal direction at a glance.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="icon" aria-hidden="true">⛅</span>
+        <h3>Weather</h3>
+        <p>Current temperature, weather description, and air pressure pulled from the Open-Meteo API — no API key needed.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="icon" aria-hidden="true">📂</span>
+        <h3>Trail Import</h3>
+        <p>Import GPX or KML trails from any source. View them on the map, export them back, or follow them on a guided hike.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="icon" aria-hidden="true">📜</span>
+        <h3>Hike Log</h3>
+        <p>Every completed hike is saved locally. Tap any entry to replay the full route on an interactive detail map.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="icon" aria-hidden="true">🔋</span>
+        <h3>Battery Friendly</h3>
+        <p>Single GPS stream with tiered accuracy — high while recording, ambient while just browsing. Background service keeps tracking even when the screen is off.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
+  <div class="screenshots-section">
+    <div class="screenshots-section-inner">
+      <h2>Screenshots</h2>
+      <div class="screenshots-placeholder">
+        <p>📸</p>
+        <p>Screenshots coming soon.<br>
+           Place <code>docs/screenshots/</code> images here to showcase the app.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <section aria-labelledby="howto-heading">
+    <h2 id="howto-heading">How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <h3>Install the APK</h3>
+        <p>Download the APK and allow installation from unknown sources in your Android settings (Settings → Security → Install unknown apps).</p>
+      </div>
+      <div class="step">
+        <h3>Grant location permission</h3>
+        <p>Hike asks for location permission on first launch. Choose "Allow all the time" to enable background tracking while the screen is off.</p>
+      </div>
+      <div class="step">
+        <h3>Head outside and hit Record</h3>
+        <p>Tap the record button on the Track tab. Your route is saved automatically with checkpoint saves every 30 seconds — so nothing is lost even if the app crashes.</p>
+      </div>
+      <div class="step">
+        <h3>Review your hikes</h3>
+        <p>Open the Log tab to see all past hikes. Tap any entry to view the route on a full-screen map with statistics.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPEN SOURCE -->
+  <section aria-labelledby="oss-heading" style="padding-top: 0;">
+    <h2 id="oss-heading" style="margin-bottom: 24px;">Free &amp; Open Source</h2>
+    <div class="oss-section">
+      <h3>Built with Flutter, no subscriptions, no tracking</h3>
+      <p>
+        Hike is free, has no ads, requires no account, and collects no personal data.
+        All hike records are stored only on your device.
+        The source code is available on
+        <a href="https://github.com/david12345/hike" target="_blank" rel="noopener">GitHub</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- DOWNLOAD CTA -->
+  <div class="cta-section">
+    <h2>Ready to hit the trail?</h2>
+    <p>Android 6.0 (API 23) or later required.</p>
+    <a class="btn-download-white"
+       href="https://github.com/david12345/hike/releases/latest/download/hike.apk"
+       download>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M5 20h14v-2H5v2zm7-18l-5 5h3v6h4v-6h3L12 2z"/>
+      </svg>
+      Download APK
+    </a>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-links">
+      <a href="https://github.com/david12345/hike" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/david12345/hike/releases" target="_blank" rel="noopener">Releases</a>
+      <a href="privacy-policy.html">Privacy Policy</a>
+    </div>
+    <p>Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a></p>
+    <p style="margin-top:6px;">Weather data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (open-source weather API)</p>
+  </footer>
+
+</body>
+</html>

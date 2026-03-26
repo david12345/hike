@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Hike</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --green-dark:  #1B5E20;
+      --green-main:  #2E7D32;
+      --green-pale:  #C8E6C9;
+      --white:       #FFFFFF;
+      --off-white:   #F9FBF9;
+      --text-dark:   #1A1A1A;
+      --text-muted:  #555;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--off-white);
+      color: var(--text-dark);
+      line-height: 1.7;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--green-dark), var(--green-main));
+      color: var(--white);
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      opacity: 0.82;
+      font-size: 0.95rem;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 24px 64px;
+    }
+
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--green-main);
+      margin: 36px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--green-pale);
+    }
+
+    p {
+      margin-bottom: 14px;
+      font-size: 0.97rem;
+      color: var(--text-dark);
+    }
+
+    ul {
+      margin: 0 0 14px 24px;
+      font-size: 0.97rem;
+    }
+
+    ul li {
+      margin-bottom: 6px;
+    }
+
+    .highlight-box {
+      background: var(--green-pale);
+      border-left: 5px solid var(--green-main);
+      border-radius: 0 10px 10px 0;
+      padding: 18px 20px;
+      margin: 24px 0;
+      font-size: 0.95rem;
+      color: var(--green-dark);
+    }
+
+    .highlight-box strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 1rem;
+    }
+
+    a {
+      color: var(--green-main);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      background: var(--green-dark);
+      color: rgba(255,255,255,0.65);
+      text-align: center;
+      padding: 28px 24px;
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: var(--green-pale);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    .footer-links {
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Privacy Policy</h1>
+    <p>Hike &mdash; Last updated: March 2026</p>
+  </header>
+
+  <main>
+
+    <div class="highlight-box">
+      <strong>The short version</strong>
+      Hike stores all your data on your device only. It does not collect, sell, or share your personal information. No account is required. There are no ads.
+    </div>
+
+    <h2>About this app</h2>
+    <p>
+      Hike is a free Android application for recording GPS hiking routes. It is developed and maintained as an open-source project. The source code is available at
+      <a href="https://github.com/david12345/hike" target="_blank" rel="noopener">github.com/david12345/hike</a>.
+    </p>
+
+    <h2>What data the app collects</h2>
+    <p>
+      Hike collects GPS location data while you are actively using the app (including while the app is running in the background during a recorded hike). This data is:
+    </p>
+    <ul>
+      <li>Stored <strong>only on your device</strong>, in the app's private local storage.</li>
+      <li>Never uploaded to any server controlled by the developer.</li>
+      <li>Never shared with third parties, sold, or used for advertising.</li>
+    </ul>
+    <p>
+      No other personal data (name, email, phone number, device identifiers, etc.) is collected at any time.
+    </p>
+
+    <h2>Third-party services</h2>
+    <p>
+      Hike contacts the following external services. These are anonymous requests — no personal data is sent.
+    </p>
+
+    <p><strong>OpenStreetMap tile servers</strong><br>
+    When you view a map, the app downloads map tiles from OpenStreetMap servers
+    (<code>tile.openstreetmap.org</code> and <code>tile.opentopomap.org</code>).
+    Each tile request includes the geographic coordinates of the map area being viewed — this is inherent to how map tiles work.
+    No user identity or device identifier is attached to these requests.
+    OpenStreetMap's privacy policy is available at
+    <a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a>.
+    </p>
+
+    <p><strong>Open-Meteo weather API</strong><br>
+    When weather data is requested, the app sends your current GPS coordinates (latitude and longitude) to the Open-Meteo API
+    (<code>api.open-meteo.com</code>) to retrieve local weather conditions.
+    No account, API key, or user identifier is used.
+    Open-Meteo's privacy policy is available at
+    <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">open-meteo.com</a>.
+    </p>
+
+    <h2>Permissions</h2>
+    <p>Hike requests the following Android permissions:</p>
+    <ul>
+      <li><strong>Location (precise, approximate, background)</strong> — required to record GPS routes and display your position on the map.</li>
+      <li><strong>Internet</strong> — required to download map tiles and weather data.</li>
+      <li><strong>Foreground Service / Foreground Service Location</strong> — required to continue GPS recording when the screen is off.</li>
+      <li><strong>Activity Recognition</strong> — used to count steps during a hike (optional feature).</li>
+      <li><strong>Post Notifications</strong> — used to show the persistent notification while background tracking is active.</li>
+      <li><strong>Write External Storage</strong> (Android 9 and below only) — required to export GPX files to device storage.</li>
+    </ul>
+
+    <h2>Data storage</h2>
+    <p>
+      All hike records (route points, timestamps, distance) are stored in the app's private Hive database on your device. This data is not accessible to other apps and is deleted when the app is uninstalled.
+    </p>
+
+    <h2>Children's privacy</h2>
+    <p>
+      Hike does not knowingly collect data from children under 13. The app has no user accounts, sign-up process, or user-generated content features.
+    </p>
+
+    <h2>Changes to this policy</h2>
+    <p>
+      If this privacy policy is updated, the new version will be published at this URL and the "Last updated" date at the top will be changed. Significant changes will also be noted in the
+      <a href="https://github.com/david12345/hike/releases" target="_blank" rel="noopener">release notes</a>.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      If you have any questions about this privacy policy, please open an issue on GitHub at
+      <a href="https://github.com/david12345/hike/issues" target="_blank" rel="noopener">github.com/david12345/hike/issues</a>,
+      or open an issue at the link above.
+    </p>
+
+  </main>
+
+  <footer>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="https://github.com/david12345/hike" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <p>Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a></p>
+  </footer>
+
+</body>
+</html>
