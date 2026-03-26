@@ -178,19 +178,19 @@
       text-align: center;
     }
 
-    .screenshots-placeholder {
-      background: rgba(255,255,255,0.6);
-      border: 2px dashed var(--green-mid);
-      border-radius: 16px;
-      padding: 48px 24px;
-      text-align: center;
-      color: var(--green-dark);
-      font-size: 0.95rem;
+    .screenshots-grid {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
-    .screenshots-placeholder p:first-child {
-      font-size: 1.5rem;
-      margin-bottom: 8px;
+    .screenshots-grid img {
+      width: 100%;
+      max-width: 260px;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+      object-fit: cover;
     }
 
     /* ─── HOW IT WORKS ────────────────────────────────────── */
@@ -443,10 +443,10 @@
   <div class="screenshots-section">
     <div class="screenshots-section-inner">
       <h2>Screenshots</h2>
-      <div class="screenshots-placeholder">
-        <p>📸</p>
-        <p>Screenshots coming soon.<br>
-           Place <code>docs/screenshots/</code> images here to showcase the app.</p>
+      <div class="screenshots-grid">
+        <img src="screenshots/Dashboard.jpg" alt="Track screen with GPS, compass and weather">
+        <img src="screenshots/HikingMap.jpg" alt="Live map with recorded route">
+        <img src="screenshots/TrailBrowser.jpg" alt="Trail browser with imported GPX trails">
       </div>
     </div>
   </div>
