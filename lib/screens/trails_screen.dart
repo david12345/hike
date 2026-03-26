@@ -898,6 +898,18 @@ class _TrailPreviewPanelState extends State<_TrailPreviewPanel> {
                   ),
                 ],
               ),
+              ListenableBuilder(
+                listenable: TilePreferenceService.instance,
+                builder: (context, _) => RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution(
+                      TilePreferenceService.instance.useTopo
+                          ? 'OpenTopoMap (CC-BY-SA)'
+                          : 'OpenStreetMap contributors',
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

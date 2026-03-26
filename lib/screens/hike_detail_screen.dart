@@ -122,6 +122,18 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
                               color: Colors.red, size: 24),
                         ),
                       ]),
+                      ListenableBuilder(
+                        listenable: TilePreferenceService.instance,
+                        builder: (context, _) => RichAttributionWidget(
+                          attributions: [
+                            TextSourceAttribution(
+                              TilePreferenceService.instance.useTopo
+                                  ? 'OpenTopoMap (CC-BY-SA)'
+                                  : 'OpenStreetMap contributors',
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   )
                 : Container(

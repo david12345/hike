@@ -80,6 +80,18 @@ class _TrailMapScreenState extends State<TrailMapScreen> {
                         ),
                       ],
                     ),
+                    ListenableBuilder(
+                      listenable: TilePreferenceService.instance,
+                      builder: (context, _) => RichAttributionWidget(
+                        attributions: [
+                          TextSourceAttribution(
+                            TilePreferenceService.instance.useTopo
+                                ? 'OpenTopoMap (CC-BY-SA)'
+                                : 'OpenStreetMap contributors',
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
