@@ -21,6 +21,7 @@ import '../services/tile_cache_service.dart';
 import '../services/tile_preference_service.dart';
 import '../utils/constants.dart';
 import '../utils/map_utils.dart';
+import '../widgets/map_attribution_widget.dart';
 import 'trail_map_screen.dart';
 
 /// Displays user-imported GPX trails from Hive.
@@ -855,60 +856,57 @@ class _TrailPreviewPanelState extends State<_TrailPreviewPanel> {
         ),
         // Map
         Expanded(
-          child: FlutterMap(
-            key: ValueKey(widget.trail.osmId),
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: _centroid,
-              initialZoom: 10,
-            ),
+          child: Stack(
             children: [
-              ListenableBuilder(
-                listenable: TilePreferenceService.instance,
-                builder: (context, _) => TileLayer(
-                  urlTemplate: TilePreferenceService.instance.tileUrl,
-                  userAgentPackageName: kPackageName,
-                  tileProvider: TileCacheService.provider(),
+              FlutterMap(
+                key: ValueKey(widget.trail.osmId),
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _centroid,
+                  initialZoom: 10,
                 ),
-              ),
-              PolylineLayer(
-                polylines: [
-                  Polyline(
-                    points: widget.trail.geometry,
-                    color: Colors.deepOrange,
-                    strokeWidth: 4.0,
-                  ),
-                ],
-              ),
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: widget.trail.geometry.first,
-                    width: 26,
-                    height: 26,
-                    child: const Icon(Icons.play_circle,
-                        color: Colors.green, size: 24),
-                  ),
-                  Marker(
-                    point: widget.trail.geometry.last,
-                    width: 26,
-                    height: 26,
-                    child: const Icon(Icons.stop_circle,
-                        color: Colors.red, size: 24),
-                  ),
-                ],
-              ),
-              ListenableBuilder(
-                listenable: TilePreferenceService.instance,
-                builder: (context, _) => RichAttributionWidget(
-                  attributions: [
-                    TextSourceAttribution(
-                      TilePreferenceService.instance.useTopo
-                          ? 'OpenTopoMap (CC-BY-SA)'
-                          : 'OpenStreetMap contributors',
+                children: [
+                  ListenableBuilder(
+                    listenable: TilePreferenceService.instance,
+                    builder: (context, _) => TileLayer(
+                      urlTemplate: TilePreferenceService.instance.tileUrl,
+                      userAgentPackageName: kPackageName,
+                      tileProvider: TileCacheService.provider(),
                     ),
-                  ],
-                ),
+                  ),
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: widget.trail.geometry,
+                        color: Colors.deepOrange,
+                        strokeWidth: 4.0,
+                      ),
+                    ],
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: widget.trail.geometry.first,
+                        width: 26,
+                        height: 26,
+                        child: const Icon(Icons.play_circle,
+                            color: Colors.green, size: 24),
+                      ),
+                      Marker(
+                        point: widget.trail.geometry.last,
+                        width: 26,
+                        height: 26,
+                        child: const Icon(Icons.stop_circle,
+                            color: Colors.red, size: 24),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const Positioned(
+                top: 8,
+                left: 8,
+                child: MapAttributionWidget(),
               ),
             ],
           ),

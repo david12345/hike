@@ -6,6 +6,7 @@ import '../services/tile_cache_service.dart';
 import '../services/tile_preference_service.dart';
 import '../utils/constants.dart';
 import '../utils/map_utils.dart';
+import '../widgets/map_attribution_widget.dart';
 
 /// Full-screen map displaying a single [OsmTrail] route as a polyline.
 ///
@@ -80,18 +81,6 @@ class _TrailMapScreenState extends State<TrailMapScreen> {
                         ),
                       ],
                     ),
-                    ListenableBuilder(
-                      listenable: TilePreferenceService.instance,
-                      builder: (context, _) => RichAttributionWidget(
-                        attributions: [
-                          TextSourceAttribution(
-                            TilePreferenceService.instance.useTopo
-                                ? 'OpenTopoMap (CC-BY-SA)'
-                                : 'OpenStreetMap contributors',
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -107,6 +96,11 @@ class _TrailMapScreenState extends State<TrailMapScreen> {
                 ),
               ),
             ],
+          ),
+          const Positioned(
+            top: 8,
+            left: 8,
+            child: MapAttributionWidget(),
           ),
           ListenableBuilder(
             listenable: TilePreferenceService.instance,

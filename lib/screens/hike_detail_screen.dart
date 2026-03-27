@@ -7,6 +7,7 @@ import '../services/tile_cache_service.dart';
 import '../services/tile_preference_service.dart';
 import '../utils/constants.dart';
 import '../utils/map_utils.dart';
+import '../widgets/map_attribution_widget.dart';
 
 /// Detail screen for a saved hike showing an interactive map and stats.
 class HikeDetailScreen extends StatefulWidget {
@@ -122,18 +123,6 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
                               color: Colors.red, size: 24),
                         ),
                       ]),
-                      ListenableBuilder(
-                        listenable: TilePreferenceService.instance,
-                        builder: (context, _) => RichAttributionWidget(
-                          attributions: [
-                            TextSourceAttribution(
-                              TilePreferenceService.instance.useTopo
-                                  ? 'OpenTopoMap (CC-BY-SA)'
-                                  : 'OpenStreetMap contributors',
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   )
                 : Container(
@@ -144,6 +133,13 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
                     ),
                   ),
           ),
+          // Attribution (only shown when route/map is visible)
+          if (hasRoute)
+            const Positioned(
+              top: 8,
+              left: 8,
+              child: MapAttributionWidget(),
+            ),
           // Topo map toggle (only shown when route exists)
           if (hasRoute)
             ListenableBuilder(
