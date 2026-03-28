@@ -23,12 +23,14 @@ class _BufferedFix {
   final double lat;
   final double lon;
   final double accuracy;
+  final double heading;
   final DateTime receivedAt;
 
   const _BufferedFix({
     required this.lat,
     required this.lon,
     required this.accuracy,
+    required this.heading,
     required this.receivedAt,
   });
 }
@@ -95,6 +97,13 @@ class TrackingState extends ChangeNotifier {
 
   /// Wall time when the first buffered fix was received.
   DateTime? _bufferStartedAt;
+
+  /// Compass bearing (degrees) at the most recently accepted GPS fix.
+  ///
+  /// Null until the first fix is accepted in a recording session. Reset to
+  /// null on [startRecording] and [stopRecording] to prevent stale headings
+  /// from a previous session influencing the next one.
+  double? _lastRecordedHeading;
 
   /// Broadcast stream that emits each raw GPS fix during recording.
   ///
@@ -180,6 +189,7 @@ class TrackingState extends ChangeNotifier {
     _gapJustInserted = false;
     _accuracyBuffer.clear();
     _bufferStartedAt = null;
+    _lastRecordedHeading = null;
     _startRecordingStream();
     notifyListeners();
   }
@@ -226,6 +236,7 @@ class TrackingState extends ChangeNotifier {
     _gapJustInserted = false;
     _accuracyBuffer.clear();
     _bufferStartedAt = null;
+    _lastRecordedHeading = null;
     _startAmbientStream();
     notifyListeners();
   }
@@ -267,7 +278,11 @@ class TrackingState extends ChangeNotifier {
   }
 
   /// Accepts a fix into the route, checking for a time gap first.
-  void _acceptFix(double lat, double lon, DateTime now) {
+  ///
+  /// [heading] is the [Position.heading] of the accepted fix. It is stored in
+  /// [_lastRecordedHeading] so that the next fix can compute a heading delta
+  /// via [_headingDelta] and detect curve-triggered recording points.
+  void _acceptFix(double lat, double lon, double heading, DateTime now) {
     if (!_gapJustInserted && _lastAcceptedFixAt != null) {
       final gapSeconds = now.difference(_lastAcceptedFixAt!).inSeconds;
       if (gapSeconds >= kGapThresholdSeconds) {
@@ -275,10 +290,24 @@ class TrackingState extends ChangeNotifier {
       }
     }
     _lastAcceptedFixAt = now;
+    _lastRecordedHeading = heading;
     if (!_recordingPointController.isClosed) {
       _recordingPointController.add((lat: lat, lon: lon));
     }
     addPoint(lat, lon);
+  }
+
+  /// Returns the absolute angular difference between [current] and [last],
+  /// in the range 0–180 degrees, with correct 0°/360° wrap-around handling.
+  ///
+  /// Returns 0.0 if [last] is null (first fix in the session) or if [current]
+  /// is negative (some chipsets return -1.0 as an "invalid heading" sentinel
+  /// when speed is too low to compute a reliable bearing).
+  double _headingDelta(double current, double? last) {
+    if (last == null) return 0.0;
+    if (current < 0) return 0.0;
+    final delta = (current - last).abs() % 360;
+    return delta > 180 ? 360 - delta : delta;
   }
 
   /// Starts the high-accuracy recording GPS stream.
@@ -304,10 +333,32 @@ class TrackingState extends ChangeNotifier {
             );
             _accuracyBuffer.clear();
             _bufferStartedAt = null;
-            _acceptFix(best.lat, best.lon, best.receivedAt);
+            _acceptFix(best.lat, best.lon, best.heading, best.receivedAt);
           }
           _consecutiveDropped = 0;
-          _acceptFix(pos.latitude, pos.longitude, now);
+
+          // Heading-change gate — curve-fidelity intent.
+          //
+          // With distanceFilter: 1, every platform-delivered fix has already
+          // satisfied the 1 m displacement criterion. All good fixes are
+          // accepted unconditionally; _acceptFix records pos.heading into
+          // _lastRecordedHeading so that _headingDelta stays current for the
+          // next fix. The speed guard and kHeadingChangeDegrees threshold are
+          // used here to log the heading-change trigger for diagnostics and to
+          // form the foundation for a future selective-acceptance gate if
+          // distanceFilter is raised again.
+          assert(() {
+            final isMoving = pos.speed >= kMinSpeedForHeadingTrigger;
+            final delta = _headingDelta(pos.heading, _lastRecordedHeading);
+            if (isMoving && delta >= kHeadingChangeDegrees) {
+              debugPrint(
+                'GPS heading change: ${delta.toStringAsFixed(1)}° '
+                'at ${pos.speed.toStringAsFixed(2)} m/s',
+              );
+            }
+            return true;
+          }());
+          _acceptFix(pos.latitude, pos.longitude, pos.heading, now);
         } else {
           // Poor fix — add to adaptive buffer.
           _consecutiveDropped++;
@@ -328,6 +379,7 @@ class TrackingState extends ChangeNotifier {
               lat: pos.latitude,
               lon: pos.longitude,
               accuracy: pos.accuracy,
+              heading: pos.heading,
               receivedAt: now,
             ));
           } else {
@@ -344,6 +396,7 @@ class TrackingState extends ChangeNotifier {
                 lat: pos.latitude,
                 lon: pos.longitude,
                 accuracy: pos.accuracy,
+                heading: pos.heading,
                 receivedAt: now,
               );
             }

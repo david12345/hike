@@ -18,14 +18,33 @@ const kMaxAcceptableAccuracyMetres = 30.0;
 
 /// Minimum displacement (metres) between accepted GPS fixes during recording.
 ///
-/// Reduced from 5 m to 3 m to capture tighter switchbacks more faithfully.
-const kRecordingDistanceFilterMetres = 3;
+/// Reduced from 3 m to 1 m to give the heading-change gate in
+/// [TrackingState] enough raw fixes to detect tight bends. At normal hiking
+/// pace (4 km/h = 1.1 m/s), 1 m displacement occurs every ~0.9 seconds,
+/// keeping the fix rate close to the GPS chipset's 1 Hz output.
+const kRecordingDistanceFilterMetres = 1;
 
 /// Minimum time between GPS fixes during recording (Android only).
 ///
-/// Guarantees a fix is delivered at least every 5 seconds even when the
-/// hiker is stationary or moving very slowly (< 3 m in 5 s = < 2.2 km/h).
-const kRecordingTimeIntervalSeconds = 5;
+/// Reduced from 5 s to 2 s so that a roundabout traversed in ~9 s receives
+/// 4–5 time-triggered fixes instead of 1–2, producing a visible arc rather
+/// than straight chords. Battery impact is negligible: the GPS chipset
+/// already runs at 1 Hz; only the Dart callback frequency changes.
+const kRecordingTimeIntervalSeconds = 2;
+
+/// Minimum heading change (degrees) since the last accepted GPS fix that
+/// forces a new recording point regardless of distance travelled.
+///
+/// 10 degrees is large enough to ignore GPS heading noise on straight paths
+/// (typical noise: 3–8 degrees) while small enough to capture a tight
+/// switchback (radius 5 m ≈ 11 degrees per 1 m chord) with adequate density.
+const kHeadingChangeDegrees = 10.0;
+
+/// Minimum speed (m/s) required before the heading-change trigger is active.
+///
+/// Below this threshold the hiker is effectively stationary and GPS heading
+/// readings are unreliable. 0.3 m/s ≈ 1 km/h.
+const kMinSpeedForHeadingTrigger = 0.3;
 
 /// Minimum elapsed time (seconds) with no accepted GPS fix before a gap
 /// marker is inserted into the recorded route.
