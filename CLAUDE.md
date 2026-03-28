@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.33.0+40 |
+| Version | 1.34.0+41 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -283,6 +283,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.31.0 | GPS recording density: distanceFilter 3 m → 1 m, timeInterval 5 s → 2 s, heading-change trigger (10°) with speed guard (0.3 m/s) to faithfully capture roundabouts and switchbacks |
 | v1.32.0 | Fix version blank on splash: await endOfFrame after setState so version is painted before Navigator.pushReplacement fires |
 | v1.33.0 | Android Auto screen: compass, lat/lon/alt, live OSM tile map via native CarAppService + MethodChannel bridge |
+| v1.34.0 | Satellite map view: three-way tile cycle OSM → Topo → Satellite using Esri World Imagery; TileMode enum replaces bool; FAB icon previews next state |
 
 ---
 
@@ -373,3 +374,4 @@ All feature specs are in `docs/features/`:
 | `gps-recording-density.md` | Reduce distance filter to 1 m, time interval to 2 s, and add heading-change-triggered sampling to capture roundabouts and switchbacks faithfully |
 | `splash-version-fix.md` | Definitive fix for version blank on splash: await endOfFrame after setState so rebuild is painted before navigation |
 | `android-auto-screen.md` | Android Auto screen: compass, lat/lon/altitude, and live OSM tile map via native CarAppService + EventChannel bridge |
+| `satellite-map-view.md` | Extend tile toggle to three-way cycle: OSM → Topo → Satellite → OSM using Esri World Imagery (free, no API key) |
