@@ -49,6 +49,7 @@ class _SplashScreenState extends State<SplashScreen> {
     ]);
 
     if (!mounted) return;
+    setState(() {}); // version is now available; repaint before navigating
 
     // Check for an interrupted recording.
     final unfinished = HikeService.findUnfinished();
