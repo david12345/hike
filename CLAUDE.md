@@ -415,3 +415,5 @@ All feature specs are in `docs/features/`:
 | `injectable-services.md` | Make TrackingState and HikeService injectable (constructor params) to enable unit testing of recording pipeline (N3) |
 | `analysis-options-strengthen.md` | Add always_declare_return_types, avoid_dynamic_calls, cancel_subscriptions, close_sinks, use_super_parameters, prefer_final_in_for_each to analysis_options.yaml (N4) |
 | `tile-cache-size-limit.md` | Add maximum size cap (500 MB) to DbCacheStore to prevent unbounded disk growth (N5) |
+| `gps-accuracy-field-validation.md` | Use speedAccuracyMetersPerSecond to guard heading trigger; gate altitude EMA on altitudeAccuracy to reduce jitter on poor fixes |
+| `gps-stationary-detection.md` | Adaptive GPS recording: switch to low-frequency stream when hiker is stationary, resume high-frequency on movement |
