@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/hike_record.dart';
 import '../models/weather_data.dart';
+import '../utils/path_simplifier.dart';
 import 'compass_service.dart';
 import 'foreground_tracking_service.dart';
 import 'hike_service.dart';
@@ -451,6 +452,18 @@ class HikeRecordingController extends ChangeNotifier {
       _inFlight!.endTime = DateTime.now();
       _inFlight!.steps = _hikeSteps;
       _inFlight!.calories = _hikeSteps * kCaloriesPerStep;
+
+      // Simplify the recorded route before final persistence.
+      final simplified = simplifyHikeRecord(
+        _inFlight!.latitudes,
+        _inFlight!.longitudes,
+      );
+      _inFlight!.latitudes
+        ..clear()
+        ..addAll(simplified.latitudes);
+      _inFlight!.longitudes
+        ..clear()
+        ..addAll(simplified.longitudes);
 
       try {
         await HikeService.save(_inFlight!);

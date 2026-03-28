@@ -79,6 +79,12 @@ const kTopoTileUrl = 'https://tile.opentopomap.org/{z}/{x}/{y}.png';
 const kSatelliteTileUrl =
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
+/// Maximum perpendicular deviation (metres) used by the Douglas-Peucker
+/// path simplifier. Points that deviate less than this from their neighbours'
+/// chord are eliminated. 3 m preserves hiking-scale curves (switchback radius
+/// >= 5 m) while removing GPS jitter noise.
+const kPathSimplificationEpsilonMetres = 3.0;
+
 /// Android foreground service notification ID used by [ForegroundTrackingService].
 ///
 /// Must be a positive integer unique within the app's notification namespace.
