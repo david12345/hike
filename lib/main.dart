@@ -11,6 +11,7 @@ import 'screens/log_screen.dart';
 import 'screens/trails_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/splash_screen.dart';
+import 'services/auto_data_bridge_service.dart';
 import 'services/foreground_tracking_service.dart';
 import 'services/hike_recording_controller.dart';
 import 'services/intent_handler_service.dart';
@@ -95,6 +96,7 @@ class _HomePageState extends State<HomePage> {
 
     _recordingController = HikeRecordingController();
     _recordingController.init();
+    AutoDataBridgeService.instance.init(_recordingController);
     _pendingGuideTrail.addListener(_onPendingGuideTrail);
 
     if (widget.unfinishedHike != null) {
@@ -164,6 +166,7 @@ class _HomePageState extends State<HomePage> {
     IntentHandlerService.onTrailsImported = null;
     IntentHandlerService.onError = null;
     _lifecycleListener.dispose();
+    AutoDataBridgeService.instance.dispose(_recordingController);
     _recordingController.dispose();
     TrackingState.instance.cancelStream();
     super.dispose();

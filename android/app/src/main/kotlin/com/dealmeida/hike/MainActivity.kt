@@ -39,6 +39,23 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.dealmeida.hike/auto_data")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "update") {
+                    val args = call.arguments as? Map<*, *>
+                    HikeCarScreen.updateData(
+                        lat = (args?.get("lat") as? Double) ?: 0.0,
+                        lon = (args?.get("lon") as? Double) ?: 0.0,
+                        alt = (args?.get("alt") as? Double) ?: 0.0,
+                        heading = (args?.get("heading") as? Double) ?: -1.0,
+                        hasPosition = (args?.get("hasPosition") as? Boolean) ?: false,
+                    )
+                    result.success(null)
+                } else {
+                    result.notImplemented()
+                }
+            }
+
         // Cold start: store any file carried by the launch intent.
         // Flutter is not yet running here, so we cannot invokeMethod yet.
         pendingFile = readFileFromIntent(intent)
