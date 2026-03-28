@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../models/osm_trail.dart';
+import '../utils/constants.dart';
 import 'location_service.dart';
 
 /// EMA smoothing factor for GPS altitude readings.
@@ -12,6 +13,10 @@ import 'location_service.dart';
 /// At alpha = 0.2, each raw fix contributes 20% to the smoothed altitude,
 /// reducing +-10-30 m jitter to a stable, readable value within 3-4 fixes.
 const double _kAltitudeEmaAlpha = 0.2;
+
+/// Number of consecutive accuracy-gated fixes before emitting a single
+/// consolidated warning to the debug log.
+const int _kConsecutiveDropThreshold = 5;
 
 /// Singleton service that shares live hike-recording state between screens
 /// and owns the single device GPS stream.
@@ -55,6 +60,14 @@ class TrackingState extends ChangeNotifier {
 
   /// Whether location permission was granted during [init].
   bool _permissionGranted = false;
+
+  /// The most recent horizontal accuracy radius in metres.
+  ///
+  /// Updated on every GPS event regardless of whether the fix was accepted.
+  double _lastAccuracy = 0.0;
+
+  /// Counter of consecutive fixes dropped by the accuracy gate.
+  int _consecutiveDropped = 0;
 
   /// Broadcast stream that emits each raw GPS fix during recording.
   ///
@@ -100,6 +113,12 @@ class TrackingState extends ChangeNotifier {
 
   /// The last known speed in m/s.
   double get ambientSpeed => _ambientSpeed;
+
+  /// The most recent horizontal accuracy radius in metres.
+  ///
+  /// Updated on every GPS event, regardless of whether the fix was accepted
+  /// into the recorded route. Returns 0.0 before the first fix.
+  double get lastAccuracy => _lastAccuracy;
 
   /// Requests location permission and starts the ambient GPS stream.
   ///
@@ -200,11 +219,36 @@ class TrackingState extends ChangeNotifier {
   }
 
   /// Starts the high-accuracy recording GPS stream.
+  ///
+  /// Fixes with [Position.accuracy] > [kMaxAcceptableAccuracyMetres] are
+  /// dropped before they enter the route or distance accumulator. UI fields
+  /// are still updated from every fix so the Track screen stays current.
   void _startRecordingStream() {
     _streamSub?.cancel();
+    _consecutiveDropped = 0;
     _streamSub = LocationService.trackPosition().listen(
       (pos) {
         _updateFromPosition(pos);
+        if (pos.accuracy > kMaxAcceptableAccuracyMetres) {
+          _consecutiveDropped++;
+          if (_consecutiveDropped == _kConsecutiveDropThreshold) {
+            debugPrint(
+              'GPS quality warning: $_kConsecutiveDropThreshold consecutive '
+              'fixes exceeded accuracy threshold. Last accuracy: '
+              '${pos.accuracy.toStringAsFixed(1)} m. '
+              'Recording paused until signal improves.',
+            );
+            _consecutiveDropped = 0;
+          } else {
+            debugPrint(
+              'GPS fix dropped: accuracy=${pos.accuracy.toStringAsFixed(1)} m '
+              '> threshold=$kMaxAcceptableAccuracyMetres m',
+            );
+          }
+          notifyListeners();
+          return;
+        }
+        _consecutiveDropped = 0;
         if (!_recordingPointController.isClosed) {
           _recordingPointController
               .add((lat: pos.latitude, lon: pos.longitude));
@@ -226,5 +270,6 @@ class TrackingState extends ChangeNotifier {
         : _ambientAltitude * (1 - _kAltitudeEmaAlpha) +
             pos.altitude * _kAltitudeEmaAlpha;
     _ambientSpeed = pos.speed;
+    _lastAccuracy = pos.accuracy;
   }
 }

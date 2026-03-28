@@ -130,6 +130,11 @@ class HikeRecordingController extends ChangeNotifier {
   /// Latest weather data; updated on each successful fetch.
   final ValueNotifier<WeatherData?> weatherNotifier = ValueNotifier(null);
 
+  /// Most recent GPS accuracy radius in metres; updated on every fix.
+  ///
+  /// A value of 0.0 means no fix has arrived yet.
+  final ValueNotifier<double> accuracyNotifier = ValueNotifier(0.0);
+
   // ---------------------------------------------------------------------------
   // Private fields
   // ---------------------------------------------------------------------------
@@ -281,6 +286,7 @@ class HikeRecordingController extends ChangeNotifier {
   // ---------------------------------------------------------------------------
 
   void _onTrackingChanged() {
+    accuracyNotifier.value = TrackingState.instance.lastAccuracy;
     final pos = TrackingState.instance.ambientPosition;
     if (pos != null) {
       positionNotifier.value = pos;
@@ -578,6 +584,7 @@ class HikeRecordingController extends ChangeNotifier {
     positionNotifier.dispose();
     stepsNotifier.dispose();
     weatherNotifier.dispose();
+    accuracyNotifier.dispose();
     super.dispose();
   }
 }

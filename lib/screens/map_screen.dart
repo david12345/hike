@@ -5,6 +5,7 @@ import '../services/tile_cache_service.dart';
 import '../services/tile_preference_service.dart';
 import '../services/tracking_state.dart';
 import '../utils/constants.dart';
+import '../widgets/map_attribution_widget.dart';
 
 /// Live map screen showing the user's current GPS position on
 /// OpenStreetMap tiles.
@@ -141,20 +142,12 @@ class _MapScreenState extends State<MapScreen> {
                   );
                 },
               ),
-              // Attribution — rebuilt only when tile preference changes.
-              ListenableBuilder(
-                listenable: TilePreferenceService.instance,
-                builder: (context, _) => RichAttributionWidget(
-                  attributions: [
-                    TextSourceAttribution(
-                      TilePreferenceService.instance.useTopo
-                          ? 'OpenTopoMap (CC-BY-SA)'
-                          : 'OpenStreetMap contributors',
-                    ),
-                  ],
-                ),
-              ),
             ],
+          ),
+          const Positioned(
+            top: 8,
+            left: 8,
+            child: MapAttributionWidget(),
           ),
           // Topo toggle FAB — rebuilt only when tile preference changes.
           ListenableBuilder(

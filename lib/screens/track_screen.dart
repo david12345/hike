@@ -5,6 +5,7 @@ import '../models/weather_data.dart';
 import '../services/compass_service.dart';
 import '../services/hike_recording_controller.dart';
 import '../services/tracking_state.dart';
+import '../utils/constants.dart';
 import '../widgets/compass_painter.dart';
 
 /// Track screen with GPS tracking, live compass, coordinates, and altitude.
@@ -251,6 +252,22 @@ class _TrackScreenState extends State<TrackScreen> {
                                   : '$speedValue km/h');
                         },
                       ),
+                      // GPS accuracy — accuracy-scoped
+                      ValueListenableBuilder<double>(
+                        valueListenable: _controller.accuracyNotifier,
+                        builder: (context, accuracy, _) {
+                          final poor = accuracy > kMaxAcceptableAccuracyMetres;
+                          final label = accuracy == 0.0
+                              ? '--'
+                              : '±${accuracy.toStringAsFixed(0)} m';
+                          return _buildTile(
+                            theme,
+                            'GPS',
+                            label,
+                            warning: poor,
+                          );
+                        },
+                      ),
                     ],
                   );
                 },
@@ -328,7 +345,10 @@ class _TrackScreenState extends State<TrackScreen> {
   }
 
   /// Builds a uniform data tile for the grid.
-  Widget _buildTile(ThemeData theme, String label, String value) {
+  ///
+  /// When [warning] is true the label is tinted amber to indicate degraded GPS.
+  Widget _buildTile(ThemeData theme, String label, String value,
+      {bool warning = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
@@ -341,7 +361,7 @@ class _TrackScreenState extends State<TrackScreen> {
           Text(
             label,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: warning ? Colors.amber : theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 2),
@@ -350,7 +370,7 @@ class _TrackScreenState extends State<TrackScreen> {
             child: Text(
               value,
               style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.onSurface,
+                color: warning ? Colors.amber : theme.colorScheme.onSurface,
               ),
             ),
           ),
