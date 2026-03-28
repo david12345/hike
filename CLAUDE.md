@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.36.0+43 |
+| Version | 1.0.14+15 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
