@@ -5,6 +5,7 @@ import '../services/tile_cache_service.dart';
 import '../services/tile_preference_service.dart';
 import '../services/tracking_state.dart';
 import '../utils/constants.dart';
+import '../utils/map_utils.dart';
 import '../widgets/map_attribution_widget.dart';
 
 /// Live map screen showing the user's current GPS position on
@@ -102,15 +103,18 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                           ],
                         ),
-                      if (tracking.isRecording && tracking.points.length > 1)
+                      if (tracking.isRecording &&
+                          tracking.points.length > 1)
                         PolylineLayer(
-                          polylines: [
-                            Polyline(
-                              points: tracking.points,
-                              color: Colors.deepOrange,
-                              strokeWidth: 4.0,
-                            ),
-                          ],
+                          polylines: segmentsFromPoints(tracking.points)
+                              .map(
+                                (seg) => Polyline(
+                                  points: seg,
+                                  color: Colors.deepOrange,
+                                  strokeWidth: 4.0,
+                                ),
+                              )
+                              .toList(),
                         ),
                       if (pos != null)
                         MarkerLayer(

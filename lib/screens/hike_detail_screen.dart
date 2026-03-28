@@ -29,6 +29,9 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
   /// Cached bounds — null when the route has fewer than 2 distinct points.
   late final LatLngBounds? _bounds;
 
+  /// Real (non-NaN) route points used for bounds and markers.
+  late final List<LatLng> _realPoints;
+
   @override
   void initState() {
     super.initState();
@@ -37,7 +40,10 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
       widget.hike.latitudes.length,
       (i) => LatLng(widget.hike.latitudes[i], widget.hike.longitudes[i]),
     );
-    _bounds = _hasMeaningfulBounds(_route) ? boundsForPoints(_route) : null;
+    _realPoints = _route.where((p) => !p.latitude.isNaN).toList();
+    _bounds = _hasMeaningfulBounds(_realPoints)
+        ? boundsForPoints(_realPoints)
+        : null;
   }
 
   @override
@@ -56,18 +62,20 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
   }
 
   /// Fallback center when bounds cannot be computed.
-  LatLng _fallbackCenter(List<LatLng> route) {
-    if (route.isEmpty) return kFallbackLocation;
-    return route.first;
+  LatLng _fallbackCenter() {
+    if (_realPoints.isEmpty) return kFallbackLocation;
+    return _realPoints.first;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final route = _route;
-    final hasRoute = route.length > 1;
+    final hasRoute = _realPoints.length > 1;
     final meaningfulBounds = _bounds != null;
-    final pointCount = widget.hike.latitudes.length;
+    final pointCount = widget.hike.latitudes
+        .where((lat) => !lat.isNaN)
+        .length;
 
     return Scaffold(
       appBar: AppBar(
@@ -90,7 +98,7 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
                           : null,
                       initialCenter: meaningfulBounds
                           ? const LatLng(0, 0)
-                          : _fallbackCenter(route),
+                          : _fallbackCenter(),
                       initialZoom: meaningfulBounds ? 14 : 16,
                     ),
                     children: [
@@ -103,22 +111,24 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
                         ),
                       ),
                       PolylineLayer(
-                        polylines: [
-                          Polyline(
-                            points: route,
-                            color: Colors.blue,
-                            strokeWidth: 4,
-                          ),
-                        ],
+                        polylines: segmentsFromPoints(route)
+                            .map(
+                              (seg) => Polyline(
+                                points: seg,
+                                color: Colors.blue,
+                                strokeWidth: 4,
+                              ),
+                            )
+                            .toList(),
                       ),
                       MarkerLayer(markers: [
                         Marker(
-                          point: route.first,
+                          point: _realPoints.first,
                           child: const Icon(Icons.play_circle,
                               color: Colors.green, size: 24),
                         ),
                         Marker(
-                          point: route.last,
+                          point: _realPoints.last,
                           child: const Icon(Icons.stop_circle,
                               color: Colors.red, size: 24),
                         ),

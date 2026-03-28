@@ -68,4 +68,8 @@ class HikeRecord extends HiveObject {
 
   String get stepsFormatted => steps > 0 ? '$steps steps' : '--';
   String get caloriesFormatted => calories > 0 ? '${calories.toStringAsFixed(0)} kcal' : '--';
+
+  /// Returns true if the point at index [i] is a gap marker (NaN sentinel).
+  static bool isGapMarker(List<double> latitudes, int i) =>
+      latitudes[i].isNaN;
 }

@@ -18,6 +18,21 @@ const double _kAltitudeEmaAlpha = 0.2;
 /// consolidated warning to the debug log.
 const int _kConsecutiveDropThreshold = 5;
 
+/// A GPS fix held in the adaptive accuracy buffer.
+class _BufferedFix {
+  final double lat;
+  final double lon;
+  final double accuracy;
+  final DateTime receivedAt;
+
+  const _BufferedFix({
+    required this.lat,
+    required this.lon,
+    required this.accuracy,
+    required this.receivedAt,
+  });
+}
+
 /// Singleton service that shares live hike-recording state between screens
 /// and owns the single device GPS stream.
 ///
@@ -68,6 +83,18 @@ class TrackingState extends ChangeNotifier {
 
   /// Counter of consecutive fixes dropped by the accuracy gate.
   int _consecutiveDropped = 0;
+
+  /// Wall time of the last accepted GPS fix during recording.
+  DateTime? _lastAcceptedFixAt;
+
+  /// Whether a gap marker was just inserted (suppresses duplicate gap checks).
+  bool _gapJustInserted = false;
+
+  /// Poor-quality fixes held while waiting for signal recovery.
+  final List<_BufferedFix> _accuracyBuffer = [];
+
+  /// Wall time when the first buffered fix was received.
+  DateTime? _bufferStartedAt;
 
   /// Broadcast stream that emits each raw GPS fix during recording.
   ///
@@ -149,6 +176,10 @@ class TrackingState extends ChangeNotifier {
     _pointsCache = null;
     _currentPosition = null;
     _ambientAltitude = 0.0; // reset EMA for fresh recording baseline
+    _lastAcceptedFixAt = null;
+    _gapJustInserted = false;
+    _accuracyBuffer.clear();
+    _bufferStartedAt = null;
     _startRecordingStream();
     notifyListeners();
   }
@@ -158,10 +189,13 @@ class TrackingState extends ChangeNotifier {
   /// Called internally from the recording stream listener each time
   /// the device moves at least 5 m (the configured `distanceFilter`).
   void addPoint(double latitude, double longitude) {
+    assert(!latitude.isNaN && !longitude.isNaN,
+        'addPoint called with NaN — use _insertGapMarker() instead');
     final point = LatLng(latitude, longitude);
     _points.add(point);
     _pointsCache = null;
     _currentPosition = point;
+    _gapJustInserted = false;
     notifyListeners();
   }
 
@@ -188,6 +222,10 @@ class TrackingState extends ChangeNotifier {
     _pointsCache = null;
     _currentPosition = null;
     _activeGuideTrail = null;
+    _lastAcceptedFixAt = null;
+    _gapJustInserted = false;
+    _accuracyBuffer.clear();
+    _bufferStartedAt = null;
     _startAmbientStream();
     notifyListeners();
   }
@@ -218,18 +256,60 @@ class TrackingState extends ChangeNotifier {
     );
   }
 
+  /// Appends a sentinel LatLng(double.nan, double.nan) to mark a tracking gap.
+  ///
+  /// Renderers that consume [points] must split the list at NaN sentinels
+  /// and draw separate polyline segments.
+  void _insertGapMarker() {
+    _points.add(const LatLng(double.nan, double.nan));
+    _pointsCache = null;
+    _gapJustInserted = true;
+  }
+
+  /// Accepts a fix into the route, checking for a time gap first.
+  void _acceptFix(double lat, double lon, DateTime now) {
+    if (!_gapJustInserted && _lastAcceptedFixAt != null) {
+      final gapSeconds = now.difference(_lastAcceptedFixAt!).inSeconds;
+      if (gapSeconds >= kGapThresholdSeconds) {
+        _insertGapMarker();
+      }
+    }
+    _lastAcceptedFixAt = now;
+    if (!_recordingPointController.isClosed) {
+      _recordingPointController.add((lat: lat, lon: lon));
+    }
+    addPoint(lat, lon);
+  }
+
   /// Starts the high-accuracy recording GPS stream.
   ///
   /// Fixes with [Position.accuracy] > [kMaxAcceptableAccuracyMetres] are
-  /// dropped before they enter the route or distance accumulator. UI fields
-  /// are still updated from every fix so the Track screen stays current.
+  /// held in a short adaptive buffer waiting for recovery. If signal recovers
+  /// within [kAdaptiveBufferWindowSeconds], the best buffered fix is committed
+  /// before the new good fix. If not, the buffer is flushed and a gap marker
+  /// is inserted.
   void _startRecordingStream() {
     _streamSub?.cancel();
     _consecutiveDropped = 0;
     _streamSub = LocationService.trackPosition().listen(
       (pos) {
         _updateFromPosition(pos);
-        if (pos.accuracy > kMaxAcceptableAccuracyMetres) {
+        final now = DateTime.now();
+
+        if (pos.accuracy <= kMaxAcceptableAccuracyMetres) {
+          // Good fix — commit any buffered fix first.
+          if (_accuracyBuffer.isNotEmpty) {
+            final best = _accuracyBuffer.reduce(
+              (a, b) => a.accuracy <= b.accuracy ? a : b,
+            );
+            _accuracyBuffer.clear();
+            _bufferStartedAt = null;
+            _acceptFix(best.lat, best.lon, best.receivedAt);
+          }
+          _consecutiveDropped = 0;
+          _acceptFix(pos.latitude, pos.longitude, now);
+        } else {
+          // Poor fix — add to adaptive buffer.
           _consecutiveDropped++;
           if (_consecutiveDropped == _kConsecutiveDropThreshold) {
             debugPrint(
@@ -239,21 +319,48 @@ class TrackingState extends ChangeNotifier {
               'Recording paused until signal improves.',
             );
             _consecutiveDropped = 0;
-          } else {
-            debugPrint(
-              'GPS fix dropped: accuracy=${pos.accuracy.toStringAsFixed(1)} m '
-              '> threshold=$kMaxAcceptableAccuracyMetres m',
-            );
           }
+
+          _bufferStartedAt ??= now;
+
+          if (_accuracyBuffer.length < kAdaptiveBufferMaxFixes) {
+            _accuracyBuffer.add(_BufferedFix(
+              lat: pos.latitude,
+              lon: pos.longitude,
+              accuracy: pos.accuracy,
+              receivedAt: now,
+            ));
+          } else {
+            // Replace the worst fix to keep buffer bounded.
+            int worstIdx = 0;
+            for (var i = 1; i < _accuracyBuffer.length; i++) {
+              if (_accuracyBuffer[i].accuracy >
+                  _accuracyBuffer[worstIdx].accuracy) {
+                worstIdx = i;
+              }
+            }
+            if (pos.accuracy < _accuracyBuffer[worstIdx].accuracy) {
+              _accuracyBuffer[worstIdx] = _BufferedFix(
+                lat: pos.latitude,
+                lon: pos.longitude,
+                accuracy: pos.accuracy,
+                receivedAt: now,
+              );
+            }
+          }
+
+          // Buffer timeout — flush and insert gap marker.
+          final bufferAge =
+              now.difference(_bufferStartedAt!).inSeconds;
+          if (bufferAge >= kAdaptiveBufferWindowSeconds) {
+            _accuracyBuffer.clear();
+            _bufferStartedAt = null;
+            _insertGapMarker();
+            _lastAcceptedFixAt = null;
+          }
+
           notifyListeners();
-          return;
         }
-        _consecutiveDropped = 0;
-        if (!_recordingPointController.isClosed) {
-          _recordingPointController
-              .add((lat: pos.latitude, lon: pos.longitude));
-        }
-        addPoint(pos.latitude, pos.longitude);
       },
     );
   }

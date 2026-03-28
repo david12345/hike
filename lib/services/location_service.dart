@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../utils/constants.dart';
 
 class LocationService {
   static Future<bool> requestPermission() async {
@@ -25,10 +27,20 @@ class LocationService {
   }
 
   static Stream<Position> trackPosition() {
+    if (Platform.isAndroid) {
+      return Geolocator.getPositionStream(
+        locationSettings: AndroidSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: kRecordingDistanceFilterMetres,
+          intervalDuration:
+              const Duration(seconds: kRecordingTimeIntervalSeconds),
+        ),
+      );
+    }
     return Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
+        distanceFilter: kRecordingDistanceFilterMetres,
       ),
     );
   }

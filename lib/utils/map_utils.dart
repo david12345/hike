@@ -60,3 +60,23 @@ String stripExtension(String filename) {
   final dotIndex = filename.lastIndexOf('.');
   return dotIndex > 0 ? filename.substring(0, dotIndex) : filename;
 }
+
+/// Splits a flat GPS point list into polyline segments, breaking at NaN
+/// sentinel markers inserted by [TrackingState._insertGapMarker].
+///
+/// Segments with fewer than 2 points are excluded (single isolated points
+/// cannot form a line and cause flutter_map assertion errors).
+List<List<LatLng>> segmentsFromPoints(List<LatLng> points) {
+  final result = <List<LatLng>>[];
+  var current = <LatLng>[];
+  for (final p in points) {
+    if (p.latitude.isNaN) {
+      if (current.length >= 2) result.add(current);
+      current = [];
+    } else {
+      current.add(p);
+    }
+  }
+  if (current.length >= 2) result.add(current);
+  return result;
+}
