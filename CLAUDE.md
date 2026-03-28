@@ -286,7 +286,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.34.0 | Satellite map view: three-way tile cycle OSM → Topo → Satellite using Esri World Imagery; TileMode enum replaces bool; FAB icon previews next state |
 | v1.35.0 | Douglas-Peucker path simplification at save time: pure-Dart, NaN-gap-aware, epsilon = 3 m; ~90% point reduction on long hikes |
 | v1.36.0 | Android Auto visibility fix: move setSurfaceCallback to onGetTemplate(), AutoDataPlugin FlutterPlugin, document Unknown sources setup |
-| v1.37.0 | Sort order toggle for Log (by date) and Trails (by name) screens; preference persisted via SharedPreferences |
+| v1.0.15 | Sort order toggle for Log (by date) and Trails (by name) screens; preference persisted via SharedPreferences |
 
 ---
 
