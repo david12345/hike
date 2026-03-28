@@ -1,6 +1,8 @@
 # Hike
 
-**Essential features for hiking.**
+**Essential tools for hiking.**
+
+![Version](https://img.shields.io/github/v/release/david12345/hike?label=version)
 
 A free, open-source Android app for GPS trail recording, offline maps, and trail management.
 
