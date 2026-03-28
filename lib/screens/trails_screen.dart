@@ -6,6 +6,7 @@ import 'package:archive/archive_io.dart';
 import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
@@ -23,6 +24,18 @@ import '../utils/constants.dart';
 import '../utils/map_utils.dart';
 import '../widgets/map_attribution_widget.dart';
 import 'trail_map_screen.dart';
+
+class _ParseArgs {
+  final String content;
+  final String filename;
+  const _ParseArgs(this.content, this.filename);
+}
+
+List<ImportedTrail> _parseGpxIsolate(_ParseArgs args) =>
+    ImportedTrailService.parseGpx(args.content, args.filename);
+
+List<ImportedTrail> _parseKmlIsolate(_ParseArgs args) =>
+    ImportedTrailService.parseKml(args.content, args.filename);
 
 /// Displays user-imported GPX trails from Hive.
 ///
@@ -46,6 +59,7 @@ class TrailsScreen extends StatefulWidget {
 
 class _TrailsScreenState extends State<TrailsScreen> {
   OsmTrail? _selectedTrail;
+  String? _selectedTrailId;
   bool _panelVisible = false;
 
   /// Whether the screen is in multi-select mode.
@@ -66,6 +80,7 @@ class _TrailsScreenState extends State<TrailsScreen> {
       _selectedIds.add(trailId);
       _panelVisible = false;
       _selectedTrail = null;
+      _selectedTrailId = null;
     });
   }
 
@@ -158,10 +173,10 @@ class _TrailsScreenState extends State<TrailsScreen> {
           // Dispatch to the correct parser based on file extension
           final List<ImportedTrail> parsed;
           if (extension.endsWith('.gpx')) {
-            parsed = ImportedTrailService.parseGpx(content, file.name);
+            parsed = await compute(_parseGpxIsolate, _ParseArgs(content, file.name));
           } else {
             // .kml and .xml both contain KML content
-            parsed = ImportedTrailService.parseKml(content, file.name);
+            parsed = await compute(_parseKmlIsolate, _ParseArgs(content, file.name));
           }
 
           for (final trail in parsed) {
@@ -212,10 +227,10 @@ class _TrailsScreenState extends State<TrailsScreen> {
     await ImportedTrailService.delete(id);
     setState(() {
       // Close panel if the deleted trail was selected
-      if (_selectedTrail != null &&
-          _selectedTrail!.osmId == -id.hashCode.abs()) {
+      if (_selectedTrailId == id) {
         _panelVisible = false;
         _selectedTrail = null;
+        _selectedTrailId = null;
       }
       // Remove from multi-select set; exit selection mode if empty
       _selectedIds.remove(id);
@@ -471,6 +486,7 @@ class _TrailsScreenState extends State<TrailsScreen> {
             child: (_panelVisible && _selectedTrail != null)
                 ? _TrailPreviewPanel(
                     trail: _selectedTrail!,
+                    importedTrailId: _selectedTrailId,
                     onExpand: () {
                       Navigator.push(
                         context,
@@ -483,6 +499,7 @@ class _TrailsScreenState extends State<TrailsScreen> {
                     onClose: () => setState(() {
                       _panelVisible = false;
                       _selectedTrail = null;
+                      _selectedTrailId = null;
                     }),
                   )
                 : const SizedBox.shrink(),
@@ -583,7 +600,7 @@ class _TrailsScreenState extends State<TrailsScreen> {
         final t = item.osmTrail;
         final importedTrail = _findImported(item.importedTrailId, importedTrails);
         final isPreviewSelected =
-            _selectedTrail?.osmId == t.osmId && _panelVisible;
+            _selectedTrailId == item.importedTrailId && _panelVisible;
         final isChecked = _selectionMode &&
             _selectedIds.contains(item.importedTrailId);
 
@@ -605,14 +622,16 @@ class _TrailsScreenState extends State<TrailsScreen> {
                   _toggleSelection(item.importedTrailId!);
                 }
               } else {
-                if (_selectedTrail?.osmId == t.osmId && _panelVisible) {
+                if (_selectedTrailId == item.importedTrailId && _panelVisible) {
                   setState(() {
                     _panelVisible = false;
                     _selectedTrail = null;
+                    _selectedTrailId = null;
                   });
                 } else {
                   setState(() {
                     _selectedTrail = t;
+                    _selectedTrailId = item.importedTrailId;
                     _panelVisible = true;
                   });
                 }
@@ -757,11 +776,13 @@ class _TrailsScreenState extends State<TrailsScreen> {
 
 class _TrailPreviewPanel extends StatefulWidget {
   final OsmTrail trail;
+  final String? importedTrailId;
   final VoidCallback onExpand;
   final VoidCallback onClose;
 
   const _TrailPreviewPanel({
     required this.trail,
+    this.importedTrailId,
     required this.onExpand,
     required this.onClose,
   });
@@ -772,29 +793,25 @@ class _TrailPreviewPanel extends StatefulWidget {
 
 class _TrailPreviewPanelState extends State<_TrailPreviewPanel> {
   late final MapController _mapController;
-
-  LatLngBounds get _bounds => boundsForPoints(widget.trail.geometry);
-
-  LatLng get _centroid {
-    final b = _bounds;
-    return LatLng(
-      (b.south + b.north) / 2,
-      (b.west + b.east) / 2,
-    );
-  }
+  late final LatLngBounds _bounds;
+  late final LatLng _centroid;
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
-    // Fit bounds after the AnimatedContainer (300ms) has finished expanding.
+    _bounds = boundsForPoints(widget.trail.geometry);
+    _centroid = LatLng(
+      (_bounds.south + _bounds.north) / 2,
+      (_bounds.west + _bounds.east) / 2,
+    );
     Future.delayed(const Duration(milliseconds: 350), _fitBounds);
   }
 
   @override
   void didUpdateWidget(_TrailPreviewPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.trail.osmId != widget.trail.osmId) {
+    if (oldWidget.importedTrailId != widget.importedTrailId) {
       Future.delayed(const Duration(milliseconds: 350), _fitBounds);
     }
   }

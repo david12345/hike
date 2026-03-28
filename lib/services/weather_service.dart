@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/weather_data.dart';
 
@@ -23,7 +24,8 @@ class WeatherService {
       );
       if (response.statusCode != 200) return null;
       return _parseResponse(response.body);
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('WeatherService: network/request error: $e\n$st');
       return null;
     }
   }
@@ -51,7 +53,8 @@ class WeatherService {
         surfacePressureHpa: (current['surface_pressure'] as num).toDouble(),
         fetchedAt: DateTime.now(),
       );
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('WeatherService: failed to parse response: $e\n$st');
       return null;
     }
   }
