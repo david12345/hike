@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.34.0+41 |
+| Version | 1.35.0+42 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -284,6 +284,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.32.0 | Fix version blank on splash: await endOfFrame after setState so version is painted before Navigator.pushReplacement fires |
 | v1.33.0 | Android Auto screen: compass, lat/lon/alt, live OSM tile map via native CarAppService + MethodChannel bridge |
 | v1.34.0 | Satellite map view: three-way tile cycle OSM → Topo → Satellite using Esri World Imagery; TileMode enum replaces bool; FAB icon previews next state |
+| v1.35.0 | Douglas-Peucker path simplification at save time: pure-Dart, NaN-gap-aware, epsilon = 3 m; ~90% point reduction on long hikes |
 
 ---
 
@@ -356,7 +357,7 @@ All feature specs are in `docs/features/`:
 | `remove-hiker-animation.md` | Delete hiker animation; unify AboutContent; splash shows version centred |
 | `about-content-true-center.md` | True-center icon+info on Splash and About via Center widget |
 | `trails-viewmodel-extraction.md` | DEFERRED: TrailsScreen ViewModel extraction (large refactor) |
-| `path-simplification.md` | DEFERRED: Douglas-Peucker GPS track simplification |
+| `path-simplification.md` | SUPERSEDED by path-simplification-dp.md |
 | `map-attribution-missing-screens.md` | Add RichAttributionWidget to HikeDetailScreen, TrailMapScreen, and TrailsScreen (Implemented) |
 | `map-attribution.md` | Reusable MapAttributionWidget at top-left replacing RichAttributionWidget on HikeDetailScreen, TrailMapScreen, and TrailsScreen |
 | `gps-precision-improvement.md` | Accuracy gate (drop fixes > 30 m), bestForNavigation mode, accuracy tile on Track screen |
@@ -375,3 +376,4 @@ All feature specs are in `docs/features/`:
 | `splash-version-fix.md` | Definitive fix for version blank on splash: await endOfFrame after setState so rebuild is painted before navigation |
 | `android-auto-screen.md` | Android Auto screen: compass, lat/lon/altitude, and live OSM tile map via native CarAppService + EventChannel bridge |
 | `satellite-map-view.md` | Extend tile toggle to three-way cycle: OSM → Topo → Satellite → OSM using Esri World Imagery (free, no API key) |
+| `path-simplification-dp.md` | Douglas-Peucker path simplification at save time: pure-Dart, NaN-gap-aware, epsilon = 3 m, applied once in stopRecording() |
