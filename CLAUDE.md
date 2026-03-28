@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.0.15+16 |
+| Version | 1.0.16+17 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -22,7 +22,7 @@
 | Map | `map_screen.dart` | Live location + route polyline on OpenStreetMap (flutter_map). |
 | Log | `log_screen.dart` | List of all saved hikes. Tap to view route on map in detail screen (OSM ↔ OpenTopoMap tile toggle). |
 | Trails | `trails_screen.dart` | Real hiking trails from Overpass API (10 km radius). Tap to view on map. |
-| About | `about_screen.dart` | App info (black bg, centered). Hiker animation at bottom. Tap to return to Track. |
+| Stats | `analytics_screen.dart` | Date-range filter, summary metrics, personal bests, streaks, Distance by Month / Day of Week / Distribution charts. About accessible from AppBar overflow. |
 
 ---
 
@@ -49,7 +49,8 @@ lib/
 │   ├── hike_detail_screen.dart     # Route map + DraggableScrollableSheet stats panel; OSM ↔ OpenTopoMap toggle
 │   ├── trails_screen.dart          # Imported trail browser; rebuilds via ImportedTrailService.version
 │   ├── trail_map_screen.dart       # Full-screen map for a single OsmTrail (deepOrange polyline)
-│   └── about_screen.dart           # About tab: app info. Reads cachedAppVersion synchronously.
+│   ├── analytics_screen.dart       # Stats tab: date filter, summary metrics, personal bests, streaks, 3 fl_chart charts.
+│   └── about_screen.dart           # App info (black bg, centered). Accessible via Analytics AppBar overflow menu.
 ├── services/
 │   ├── hike_service.dart           # Hive CRUD for HikeRecord + version ValueNotifier + findUnfinished()
 │   ├── hike_recording_controller.dart # ChangeNotifier: GPS recording lifecycle, checkpoint saves, error handling
@@ -62,7 +63,8 @@ lib/
 │   ├── imported_trail_service.dart # Thin facade over parsers/exporter/repository; version ValueNotifier
 │   ├── gpx_exporter.dart           # GPX serialisation + file I/O + ZIP bundling
 │   ├── foreground_tracking_service.dart # Android foreground service for background GPS; wake lock enabled
-│   └── intent_handler_service.dart # Android file-open intent handler (GPX/KML/XML)
+│   ├── intent_handler_service.dart # Android file-open intent handler (GPX/KML/XML)
+│   └── analytics_service.dart      # Pure-Dart: AnalyticsService.compute(), AnalyticsStats, MonthlyBucket, streak helpers
 ├── utils/
 │   ├── map_utils.dart              # boundsForPoints(List<LatLng>) → LatLngBounds
 │   └── constants.dart              # kFallbackLocation, kOsmTileUrl, kTopoTileUrl, kForegroundServiceId
@@ -94,6 +96,7 @@ lib/
 | flutter_map_cache | ^1.5.0 | Disk tile caching via CachedTileProvider |
 | dio_cache_interceptor | ^3.5.0 | HTTP cache interceptor (peer dep of flutter_map_cache) |
 | dio_cache_interceptor_db_driver | ^2.2.0 | SQLite cache store (peer dep of flutter_map_cache) |
+| fl_chart | ^0.70.0 | Charts for Analytics screen (bar charts) |
 | flutter_launcher_icons | ^0.14.3 | (dev) Generates Android launcher icons |
 | flutter_localizations | sdk: flutter | Localizations delegates for forced English locale |
 
@@ -286,6 +289,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.34.0 | Satellite map view: three-way tile cycle OSM → Topo → Satellite using Esri World Imagery; TileMode enum replaces bool; FAB icon previews next state |
 | v1.35.0 | Douglas-Peucker path simplification at save time: pure-Dart, NaN-gap-aware, epsilon = 3 m; ~90% point reduction on long hikes |
 | v1.36.0 | Android Auto visibility fix: move setSurfaceCallback to onGetTemplate(), AutoDataPlugin FlutterPlugin, document Unknown sources setup |
+| v1.0.16 | Analytics screen: hikes per month, distance over time, distance distribution, personal bests, streaks, date range filter |
 | v1.0.15 | Sort order toggle for Log (by date) and Trails (by name) screens; preference persisted via SharedPreferences |
 
 ---
@@ -380,5 +384,6 @@ All feature specs are in `docs/features/`:
 | `satellite-map-view.md` | Extend tile toggle to three-way cycle: OSM → Topo → Satellite → OSM using Esri World Imagery (free, no API key) |
 | `path-simplification-dp.md` | Douglas-Peucker path simplification at save time: pure-Dart, NaN-gap-aware, epsilon = 3 m, applied once in stopRecording() |
 | `android-auto-visibility-fix.md` | Fix app not appearing in Android Auto: move setSurfaceCallback to onGetTemplate(), add Unknown sources step, move MethodChannel handler to FlutterPlugin |
+| `analytics-screen.md` | Analytics screen: date range filter, summary metrics grid, personal bests, streaks, Distance by Month / Day of Week / Distribution bar charts |
 | `log-screen-sort-order.md` | Sort toggle (newest/oldest first) in Log screen app bar; persisted via SharedPreferences |
 | `trails-screen-sort-order.md` | Sort toggle (A → Z / Z → A) in Trails screen normal-mode app bar; persisted via SharedPreferences |

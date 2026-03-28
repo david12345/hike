@@ -9,7 +9,7 @@ import 'screens/track_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/log_screen.dart';
 import 'screens/trails_screen.dart';
-import 'screens/about_screen.dart';
+import 'screens/analytics_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/auto_data_bridge_service.dart';
 import 'services/foreground_tracking_service.dart';
@@ -77,10 +77,6 @@ class _HomePageState extends State<HomePage> {
   late final AppLifecycleListener _lifecycleListener;
   final ValueNotifier<OsmTrail?> _pendingGuideTrail = ValueNotifier(null);
 
-  void _onAboutTap() {
-    setState(() => _currentIndex = 0);
-  }
-
   void _onTabChanged(int index) {
     if (index == 0) {
       _recordingController.resumeCompass();
@@ -132,6 +128,7 @@ class _HomePageState extends State<HomePage> {
       const MapScreen(),
       const LogScreen(),
       TrailsScreen(onStartHike: _pendingGuideTrail),
+      const AnalyticsScreen(),
     ];
   }
 
@@ -177,10 +174,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: [
-          ..._screens,
-          AboutScreen(onTap: _onAboutTap),
-        ],
+        children: _screens,
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
@@ -207,9 +201,9 @@ class _HomePageState extends State<HomePage> {
             label: 'Trails',
           ),
           NavigationDestination(
-            icon: Icon(Icons.info_outline),
-            selectedIcon: Icon(Icons.info),
-            label: 'About',
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'Stats',
           ),
         ],
       ),
