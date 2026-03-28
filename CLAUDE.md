@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.0.14+15 |
+| Version | 1.0.15+16 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -286,6 +286,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.34.0 | Satellite map view: three-way tile cycle OSM → Topo → Satellite using Esri World Imagery; TileMode enum replaces bool; FAB icon previews next state |
 | v1.35.0 | Douglas-Peucker path simplification at save time: pure-Dart, NaN-gap-aware, epsilon = 3 m; ~90% point reduction on long hikes |
 | v1.36.0 | Android Auto visibility fix: move setSurfaceCallback to onGetTemplate(), AutoDataPlugin FlutterPlugin, document Unknown sources setup |
+| v1.37.0 | Sort order toggle for Log (by date) and Trails (by name) screens; preference persisted via SharedPreferences |
 
 ---
 
@@ -379,3 +380,5 @@ All feature specs are in `docs/features/`:
 | `satellite-map-view.md` | Extend tile toggle to three-way cycle: OSM → Topo → Satellite → OSM using Esri World Imagery (free, no API key) |
 | `path-simplification-dp.md` | Douglas-Peucker path simplification at save time: pure-Dart, NaN-gap-aware, epsilon = 3 m, applied once in stopRecording() |
 | `android-auto-visibility-fix.md` | Fix app not appearing in Android Auto: move setSurfaceCallback to onGetTemplate(), add Unknown sources step, move MethodChannel handler to FlutterPlugin |
+| `log-screen-sort-order.md` | Sort toggle (newest/oldest first) in Log screen app bar; persisted via SharedPreferences |
+| `trails-screen-sort-order.md` | Sort toggle (A → Z / Z → A) in Trails screen normal-mode app bar; persisted via SharedPreferences |

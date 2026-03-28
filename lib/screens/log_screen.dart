@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/hike_record.dart';
 import '../services/hike_service.dart';
 import '../services/imported_trail_service.dart';
@@ -16,6 +17,39 @@ class LogScreen extends StatefulWidget {
 }
 
 class _LogScreenState extends State<LogScreen> {
+  bool _sortDescending = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSortPreference();
+  }
+
+  Future<void> _loadSortPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _sortDescending = prefs.getBool('log_sort_descending') ?? true;
+    });
+  }
+
+  Future<void> _toggleSort() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => _sortDescending = !_sortDescending);
+    await prefs.setBool('log_sort_descending', _sortDescending);
+  }
+
+  AppBar _buildAppBar(int hikeCount) => AppBar(
+    title: Text(hikeCount == 0 ? 'Hike Log' : 'Hike Log ($hikeCount)'),
+    centerTitle: true,
+    actions: [
+      IconButton(
+        icon: Icon(_sortDescending ? Icons.arrow_downward : Icons.arrow_upward),
+        tooltip: _sortDescending ? 'Oldest first' : 'Newest first',
+        onPressed: _toggleSort,
+      ),
+    ],
+  );
+
   Future<void> _saveToTrails(HikeRecord hike) async {
     final controller = TextEditingController(text: hike.name);
     final name = await showDialog<String>(
@@ -78,10 +112,13 @@ class _LogScreenState extends State<LogScreen> {
     return ListenableBuilder(
       listenable: HikeService.version,
       builder: (context, _) {
-        final hikes = HikeService.getAll();
-        if (hikes.isEmpty) {
+        final hikes = HikeService.getAll(); // always newest-first from service
+        final sorted = _sortDescending
+            ? hikes
+            : hikes.reversed.toList();
+        if (sorted.isEmpty) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Hike Log'), centerTitle: true),
+            appBar: _buildAppBar(0),
             body: const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -98,16 +135,13 @@ class _LogScreenState extends State<LogScreen> {
         }
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text('Hike Log (${hikes.length})'),
-            centerTitle: true,
-          ),
+          appBar: _buildAppBar(sorted.length),
           body: ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: hikes.length,
+            itemCount: sorted.length,
             separatorBuilder: (context, index) => const SizedBox(height: 8),
             itemBuilder: (context, i) {
-              final hike = hikes[i];
+              final hike = sorted[i];
               return Card(
                 child: ListTile(
                   leading: const CircleAvatar(child: Icon(Icons.terrain)),

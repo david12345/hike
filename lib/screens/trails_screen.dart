@@ -14,6 +14,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/imported_trail.dart';
 import '../models/osm_trail.dart';
@@ -68,6 +69,28 @@ class _TrailsScreenState extends State<TrailsScreen> {
   /// IDs of currently selected imported trails.
   /// Uses ImportedTrail.id (String), not OsmTrail.osmId.
   final Set<String> _selectedIds = {};
+
+  /// Sort order for the trail list: true = A → Z, false = Z → A.
+  bool _sortAscending = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSortPreference();
+  }
+
+  Future<void> _loadSortPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _sortAscending = prefs.getBool('trails_sort_ascending') ?? true;
+    });
+  }
+
+  Future<void> _toggleSort() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => _sortAscending = !_sortAscending);
+    await prefs.setBool('trails_sort_ascending', _sortAscending);
+  }
 
   // ---------------------------------------------------------------------------
   // Selection mode helpers
@@ -514,12 +537,17 @@ class _TrailsScreenState extends State<TrailsScreen> {
     );
   }
 
-  /// Builds the normal-mode AppBar with title and export menu.
+  /// Builds the normal-mode AppBar with title, sort toggle, and export menu.
   PreferredSizeWidget _buildNormalAppBar() {
     return AppBar(
       title: const Text('Trail Browser'),
       centerTitle: true,
       actions: [
+        IconButton(
+          icon: Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward),
+          tooltip: _sortAscending ? 'Z \u2192 A' : 'A \u2192 Z',
+          onPressed: _toggleSort,
+        ),
         _buildExportMenu(),
       ],
     );
@@ -586,7 +614,13 @@ class _TrailsScreenState extends State<TrailsScreen> {
       );
     }
 
-    final trails = importedTrails.map((imported) => _DisplayTrail(
+    final sorted = List<ImportedTrail>.from(importedTrails)
+      ..sort((a, b) {
+        final cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        return _sortAscending ? cmp : -cmp;
+      });
+
+    final trails = sorted.map((imported) => _DisplayTrail(
       osmTrail: ImportedTrailService.toOsmTrail(imported),
       importedTrailId: imported.id,
     )).toList();
