@@ -67,6 +67,18 @@ const kAdaptiveBufferWindowSeconds = 15;
 /// long degradation window. The best fix (lowest accuracy) is always kept.
 const kAdaptiveBufferMaxFixes = 10;
 
+/// Standard OpenStreetMap tile URL template.
+const kOsmTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+/// OpenTopoMap tile URL template.
+const kTopoTileUrl = 'https://tile.opentopomap.org/{z}/{x}/{y}.png';
+
+/// Esri World Imagery satellite tile URL template.
+/// Free for non-commercial use; no API key required.
+/// Note: tile coordinate order is {z}/{y}/{x} (row/column), not {z}/{x}/{y}.
+const kSatelliteTileUrl =
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+
 /// Android foreground service notification ID used by [ForegroundTrackingService].
 ///
 /// Must be a positive integer unique within the app's notification namespace.

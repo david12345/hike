@@ -150,7 +150,7 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
               left: 8,
               child: MapAttributionWidget(),
             ),
-          // Topo map toggle (only shown when route exists)
+          // Tile mode cycle button (only shown when route exists)
           if (hasRoute)
             ListenableBuilder(
               listenable: TilePreferenceService.instance,
@@ -159,12 +159,9 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
                 right: 16,
                 child: FloatingActionButton.small(
                   heroTag: 'detail_topo',
-                  onPressed: () => TilePreferenceService.instance.toggle(),
-                  backgroundColor: TilePreferenceService.instance.useTopo
-                      ? theme.colorScheme.primaryContainer
-                      : null,
-                  tooltip: 'Toggle topo map',
-                  child: const Icon(Icons.terrain),
+                  onPressed: () => TilePreferenceService.instance.cycle(),
+                  tooltip: TilePreferenceService.instance.nextModeTooltip,
+                  child: Icon(TilePreferenceService.instance.nextModeIcon),
                 ),
               ),
             ),

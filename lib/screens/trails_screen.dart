@@ -850,12 +850,12 @@ class _TrailPreviewPanelState extends State<_TrailPreviewPanel> {
               ListenableBuilder(
                 listenable: TilePreferenceService.instance,
                 builder: (context, _) => IconButton(
-                  icon: const Icon(Icons.terrain, size: 20),
-                  tooltip: 'Toggle topo map',
-                  onPressed: () => TilePreferenceService.instance.toggle(),
-                  color: TilePreferenceService.instance.useTopo
-                      ? Colors.deepOrange
-                      : null,
+                  icon: Icon(
+                    TilePreferenceService.instance.nextModeIcon,
+                    size: 20,
+                  ),
+                  tooltip: TilePreferenceService.instance.nextModeTooltip,
+                  onPressed: () => TilePreferenceService.instance.cycle(),
                 ),
               ),
               IconButton(

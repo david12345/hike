@@ -109,12 +109,9 @@ class _TrailMapScreenState extends State<TrailMapScreen> {
               right: 16,
               child: FloatingActionButton.small(
                 heroTag: 'trail_topo',
-                onPressed: () => TilePreferenceService.instance.toggle(),
-                backgroundColor: TilePreferenceService.instance.useTopo
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : null,
-                tooltip: 'Toggle topo map',
-                child: const Icon(Icons.terrain),
+                onPressed: () => TilePreferenceService.instance.cycle(),
+                tooltip: TilePreferenceService.instance.nextModeTooltip,
+                child: Icon(TilePreferenceService.instance.nextModeIcon),
               ),
             ),
           ),

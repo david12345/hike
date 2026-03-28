@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/tile_preference_service.dart';
 
-/// Displays the correct OSM tile attribution text for the currently active
+/// Displays the correct tile attribution text for the currently active
 /// tile layer, rebuilding automatically when [TilePreferenceService] changes.
 ///
 /// Intended to be placed inside a [Stack] at [Positioned(top: 8, left: 8)].
@@ -13,9 +13,16 @@ class MapAttributionWidget extends StatelessWidget {
     return ListenableBuilder(
       listenable: TilePreferenceService.instance,
       builder: (context, _) {
-        final text = TilePreferenceService.instance.useTopo
-            ? '© OpenStreetMap contributors, © OpenTopoMap'
-            : '© OpenStreetMap contributors';
+        final String text;
+        switch (TilePreferenceService.instance.mode) {
+          case TileMode.osm:
+            text = '© OpenStreetMap contributors';
+          case TileMode.topo:
+            text = '© OpenStreetMap contributors, © OpenTopoMap';
+          case TileMode.satellite:
+            text =
+                'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics';
+        }
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
           decoration: BoxDecoration(

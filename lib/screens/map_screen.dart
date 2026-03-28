@@ -153,7 +153,7 @@ class _MapScreenState extends State<MapScreen> {
             left: 8,
             child: MapAttributionWidget(),
           ),
-          // Topo toggle FAB — rebuilt only when tile preference changes.
+          // Tile mode cycle FAB — rebuilt only when tile preference changes.
           ListenableBuilder(
             listenable: TilePreferenceService.instance,
             builder: (context, _) => Positioned(
@@ -161,11 +161,9 @@ class _MapScreenState extends State<MapScreen> {
               right: 16,
               child: FloatingActionButton.small(
                 heroTag: 'topo',
-                onPressed: () => TilePreferenceService.instance.toggle(),
-                backgroundColor: TilePreferenceService.instance.useTopo
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : null,
-                child: const Icon(Icons.terrain),
+                onPressed: () => TilePreferenceService.instance.cycle(),
+                tooltip: TilePreferenceService.instance.nextModeTooltip,
+                child: Icon(TilePreferenceService.instance.nextModeIcon),
               ),
             ),
           ),
