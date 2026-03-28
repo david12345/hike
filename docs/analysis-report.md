@@ -1,260 +1,312 @@
-# Hike App — Analysis Report
+# Hike App — Full Analysis Report
 
-**Date:** 2026-03-28
-**Version analysed:** 1.0.6+7
-**Analysts:** flutter-architect · flutter-code-quality · flutter-performance
+> Generated: 2026-03-28
+> Version analysed: 1.0.16+17
+> Reviewers: flutter-architect · flutter-code-quality · flutter-performance
 
 ---
 
 ## Summary
 
-**Overall health score: 6.5 / 10**
+| Dimension | Score | Notes |
+|-----------|-------|-------|
+| Architecture | 6/10 | Near-MVVM applied inconsistently; good ViewModel in `HikeRecordingController` but screens own too much logic |
+| Code Quality | 8/10 | Zero `dart analyze` issues; clean constants; granular `ValueNotifier` subsystems; two 1 000-line files need splitting |
+| Performance | 6/10 | Solid GPS single-stream design; analytics computation blocks UI thread; 1 m GPS filter drains battery on long hikes |
+| **Overall** | **7/10** | Well-engineered personal project with clear attention to lifecycle, offline, and battery. The gaps are known patterns that compound as the hike log grows. |
 
-The app has a well-engineered GPS-critical path (recording, checkpoint saves, crash recovery, offline tile caching) and clean models/parsers. Technical debt is concentrated in three areas: `TrailsScreen` (a god-class with no ViewModel), the lack of any dependency injection (services are untestable statics), and several battery/crash risks in the recording pipeline. Zero test coverage is the single most dangerous long-term risk.
-
-**Architecture maturity:** MVVM applied correctly to Track/Map; no pattern applied to Log/Trails/Detail screens. Inconsistent service layer (some static, some singletons, one proper repository).
+**Architecture maturity:** Service-layer MVVM, inconsistently applied. The Track + Map screens are nearly pure Views. The Log, Analytics, and Trails screens mix UI with preference-persistence business logic.
 
 ---
 
 ## Critical Issues
 
-### CRIT-1 — `bestForNavigation` GPS mode drains battery on long hikes
-**File:** `lib/services/location_service.dart:30`
-`LocationAccuracy.bestForNavigation` keeps the GPS radio at maximum power. On a 6-hour alpine hike this is a significant drain. The 30 m accuracy gate (`kMaxAcceptableAccuracyMetres`) already ensures point quality — `bestForNavigation` adds no benefit once the chipset has lock.
-**Fix:** Change to `LocationAccuracy.high`.
+### C1 — Analytics computation blocks the UI thread on every hike save
 
-### CRIT-2 — `WeatherService` silently swallows all exceptions
-**File:** `lib/services/weather_service.dart:21-28, 51-56`
-Both `catch` blocks catch every exception and return `null` with no logging. A broken API contract, `SocketException`, or JSON schema change are all invisible to the caller and to developers.
-**Fix:** Add `debugPrint` in each catch block; separate network failures from parse failures.
+**File:** `lib/screens/analytics_screen.dart:192–198`
+**Risk:** Dropped frames / ANR on devices with large hike logs.
 
-### CRIT-3 — `_bounds` / `_centroid` are O(N) getters called on every `build`
-**File:** `lib/screens/trails_screen.dart:776-784`
-Both are getter methods that call `boundsForPoints()` on every access. `_centroid` calls `_bounds` internally — two full geometry scans per frame. The spec `trail-preview-bounds-cache.md` is marked *implemented* in CLAUDE.md but the code still uses getters.
-**Fix:** Promote to `late final` fields assigned in `initState`.
+`HikeService.getAll()`, `_applyFilter()`, and `AnalyticsService.compute()` all run synchronously inside a `ListenableBuilder` builder that fires on every `HikeService.version` increment (i.e. every time a hike is saved, even from another tab). `AnalyticsService.compute()` performs O(N log N) work: multiple O(N) passes plus a sort for streak calculation. For 500 hikes this is measurable jank on mid-range Android.
 
-### CRIT-4 — GPX/KML parsing runs synchronously on the main isolate
-**Files:** `lib/screens/trails_screen.dart:152-165`, `lib/parsers/gpx_parser.dart`, `lib/parsers/kml_parser.dart`
-`utf8.decode` + `XmlDocument.parse` + `computeDistanceKm` all run synchronously on the main isolate. A 10-hour Garmin track (~36 000 trkpt elements, 5–15 MB) will freeze the UI for 1–5 seconds and risks ANR on low-end devices. Both parsers have no Flutter/Hive dependencies — they are `compute()`-safe.
-**Fix:** Wrap parse+distance call in `compute()`.
-
-### CRIT-5 — `computeDistanceKm` calls `Geolocator.distanceBetween` per point via platform channel
-**File:** `lib/utils/map_utils.dart:33-44`
-`Geolocator.distanceBetween` is a synchronous platform-channel call. For 30 000 point pairs this is 29 999 round-trips (~3 s of main-isolate blocking). It also **cannot be used inside `compute()`** — platform channels are not accessible from spawned isolates, causing `MissingPluginException`.
-**Fix:** Implement a pure-Dart Haversine formula in `map_utils.dart` for parser/exporter use.
-
-### CRIT-6 — ID collision risk in `ImportedTrailRepository.toOsmTrail`
-**File:** `lib/repositories/imported_trail_repository.dart:52`
-`osmId: -trail.id.hashCode.abs()` — UUID v4 strings hash to a 32-bit space, making collisions possible. Trail selection in `TrailsScreen` uses `osmId` equality; a collision makes two trails indistinguishable in the preview panel.
-**Fix:** Use the UUID string directly for selection, not its hash.
+**Fix:** Wrap `AnalyticsService.compute()` in a `compute()` isolate call, or introduce an `AnalyticsViewModel` that caches the result and only recomputes when the version or filter changes.
 
 ---
 
-## High Priority
+### C2 — Parallel lat/lon arrays can have a length mismatch after a crash
 
-### H-1 — Wake lock acquired unconditionally; not gated on screen state
-**File:** `lib/services/hike_recording_controller.dart:332-333, 506-507`
-The wake lock is held for the entire recording duration regardless of whether the screen is on. During a 6-hour hike with the screen mostly on, this prevents the CPU from sleeping between GPS events.
-**Fix:** Gate `setWakeLock` on `AppLifecycleListener` (screen off → on) rather than recording start/stop.
+**File:** `lib/models/hike_record.dart:5–9`
+**Risk:** `IndexError` crash on `HikeDetailScreen` if the Hive box is inconsistent.
 
-### H-2 — Unbounded GPS coordinate lists + synchronous Hive serialisation on main isolate
-**Files:** `lib/models/hike_record.dart:27-28`, `lib/services/hike_recording_controller.dart:388-427`
-`latitudes`/`longitudes` grow without bound. Every checkpoint serialises the entire `HikeRecord` to Hive on the main isolate. At 10 000+ points this can take 50–200 ms on low-end devices, risking dropped frames.
-**Fix (short-term):** Use `compute()` for `HikeService.save()` when point count exceeds ~1 000.
-**Fix (long-term):** Implement Douglas-Peucker simplification (already spec'd, deferred).
+`latitudes` and `longitudes` are stored as independent `List<double>` fields. Hive box writes are not transactional. A crash between the two writes leaves them at different lengths. `HikeDetailScreen.initState()` uses `latitudes.length` without verifying it matches `longitudes.length`.
 
-### H-3 — `_TrailsScreenState` is a god-class (~450 lines of non-UI logic)
-**File:** `lib/screens/trails_screen.dart:121-444`
-File I/O, permission checks, ZIP bundling, OS version detection, dialog presentation, and trail conversion all live in one `State` class alongside all rendering code. The DEFERRED spec `trails-viewmodel-extraction.md` covers the fix.
-**Fix:** Extract `TrailImportExportController extends ChangeNotifier`.
-
-### H-4 — `onError` callback couples `HikeRecordingController` to UI
-**File:** `lib/services/hike_recording_controller.dart:321, 434`
-The controller accepts `required void Function(String) onError` in `startRecording` and `stopRecording`, giving it knowledge of UI affordances. `_lastError` already exists as a field.
-**Fix:** Remove the callback; set `_lastError` + `notifyListeners()`; let `TrackScreen` read it via `ListenableBuilder`.
-
-### H-5 — `_TrailPreviewPanelState._fitBounds` uses a 350 ms timing hack
-**File:** `lib/screens/trails_screen.dart:791-799`
-`Future.delayed(350ms, _fitBounds)` waits slightly longer than the 300 ms `AnimatedContainer`. If the animation duration ever changes the delay must be manually updated.
-**Fix:** Use `addPostFrameCallback` or an `AnimationController` completion callback.
-
-### H-6 — `TapGestureRecognizer` in `AboutContent` is never disposed — memory leak
-**File:** `lib/widgets/about_content.dart:70-72, 92-94`
-`TapGestureRecognizer` extends `GestureRecognizer`, which must be disposed. `AboutContent` is a `StatelessWidget` with no `dispose`.
-**Fix:** Convert `AboutContent` to a `StatefulWidget` and dispose the recognizers in `dispose()`, or replace `RichText`+recognizer with `GestureDetector`/`InkWell`.
-
-### H-7 — `_recordingPointController` closed permanently; singleton survives activity re-creation
-**File:** `lib/services/tracking_state.dart:200-204`
-`cancelStream()` closes `_recordingPointController`. On Android activity re-creation, `dispose()` calls `cancelStream()`, permanently closing the stream. The new `HikeRecordingController` subscribes to a closed stream — the `isClosed` guard silently drops all recording points with no error.
-**Fix:** Lazily re-create the `StreamController` in `_startRecordingStream` if closed.
-
-### H-8 — `_HomePageState._onPendingGuideTrail` async errors not caught
-**File:** `lib/main.dart:143-158`
-This `Future<void>` is stored as a `VoidCallback` listener. Exceptions in async gaps propagate as unhandled Zone errors, bypassing `onError`.
-**Fix:** Wrap the body in `try/catch` that calls `_showError`.
-
-### H-9 — Tile layer + topo FAB duplicated verbatim across four screens
-**Files:** `map_screen.dart`, `hike_detail_screen.dart`, `trail_map_screen.dart`, `trails_screen.dart`
-The `ListenableBuilder` + `TileLayer` pattern and the topo-toggle `FloatingActionButton` are copied four times.
-**Fix:** Extract `_TopoTileLayer` and `_TopoToggleFab` shared widgets.
-
-### H-10 — Discontinued `dio_cache_interceptor_db_store` in production
-**File:** `pubspec.yaml:59`
-No future security or API-compatibility fixes will be released for this package.
-**Action:** Monitor pub.dev; migrate when `dio_cache_interceptor_drift_store` is published (spec: `tile-cache-store-migration.md`).
+**Fix:** Add a length-parity guard in `HikeDetailScreen.initState()`: if `latitudes.length != longitudes.length`, truncate to `min(...)` and log a warning.
 
 ---
 
-## Medium Priority
+### C3 — Heading-change gate is disabled in release builds
 
-### M-1 — Ambient GPS stream has no time-interval guard at vehicle speeds
-**File:** `lib/services/location_service.dart:41-48`
-At 100 km/h, `distanceFilter: 50` fires ~2 000 times/hour. Add `timeInterval: 30000`.
+**File:** `lib/services/tracking_state.dart:350–361`
+**Risk:** The 1 m / 2 s GPS density intended for switchback capture is completely unguarded in production.
 
-### M-2 — Magnetometer runs at native frequency (~20 Hz); only UI rebuilds are throttled
-**File:** `lib/services/hike_recording_controller.dart:196-214`
-~430 000 closure invocations on a 6-hour hike. The 1-degree gate suppresses notifiers but not the closure.
-**Fix:** Add a 200 ms `throttle` before the 1-degree gate.
+The heading-change gate (intended to selectively accept fixes based on direction change, reducing battery drain on straight sections) is wrapped in an `assert` block. `assert` is a no-op in release builds. All fixes are unconditionally accepted via `_acceptFix` at line 361, meaning the GPS chip fires at near-maximum rate for the entire hike regardless of trail shape.
 
-### M-3 — `_buildBody` allocates `OsmTrail` + `List<LatLng>` for every trail on every rebuild
-**File:** `lib/screens/trails_screen.dart:572-575`
-50 trails × 500 points = 25 000 `LatLng` allocations per rebuild.
-**Fix:** Cache `OsmTrail` objects in the service or outside the `ListenableBuilder`.
-
-### M-4 — `PolylineLayer` repaints entire recorded track on every GPS fix
-**File:** `lib/screens/map_screen.dart:105-114`
-Full polyline repaint every 3–4 seconds during recording. Worsens with track length.
-**Fix (short-term):** Add `RepaintBoundary` around `PolylineLayer`. **Fix (long-term):** Douglas-Peucker.
-
-### M-5 — No DI; services are untestable static singletons
-All services accessed via static methods or `.instance`. Cannot unit-test `HikeRecordingController` without starting a real GPS stream and foreground service.
-**Fix:** Constructor-inject dependencies; use interfaces at service boundaries.
-
-### M-6 — `HikeRecord` stores lat/lon as parallel arrays
-**File:** `lib/models/hike_record.dart:27-28`
-Two lists that must always be the same length. A future edit touching only one silently corrupts data.
-**Fix:** Introduce `@HiveType GpsPoint` with `@HiveField(9) List<GpsPoint> points`.
-
-### M-7 — Startup orchestration logic in `SplashScreen._initAndNavigate`
-**File:** `lib/screens/splash_screen.dart:37-77`
-Service init order, crash-recovery decision, and navigation live in a widget method.
-**Fix:** Extract `AppInitializer` returning an `AppStartResult` sealed class.
-
-### M-8 — `IntentHandlerService` static mutable callbacks are fragile
-**File:** `lib/main.dart:123-125`
-Static nullable callbacks can silently become stale after widget disposal.
-**Fix:** Use `StreamController.broadcast()`; subscribe/cancel in `initState`/`dispose`.
-
-### M-9 — `_TrackScreen._buildTile` and `_ElapsedTimeTile.build` duplicate tile structure
-**File:** `lib/screens/track_screen.dart:350-380, 428-457`
-
-### M-10 — `WeatherService` creates a new TCP connection per fetch
-**File:** `lib/services/weather_service.dart:21-22`
-**Fix:** Share an `http.Client` instance.
-
-### M-11 — `CLAUDE.md` version mismatch (`1.0.6+7` in pubspec vs `1.30.0+37` in docs)
-
-### M-12 — `LogScreen._delete` dialog uses outer `context` instead of dialog context
-**File:** `lib/screens/log_screen.dart:63-64`
+**Fix:** Move the heading-change guard out of the `assert` block so it runs in release builds.
 
 ---
 
-## Low Priority
+## High Priority Improvements
 
-### L-1 — `LocationService.getCurrentPosition` is dead code
-**File:** `lib/services/location_service.dart:19-24`
+### H1 — `AnalyticsScreen` and `TrailsScreen` own too much business logic
 
-### L-2 — `HikeService.getAll()` double-allocates a reversed list
-**File:** `lib/services/hike_service.dart:19-21`
+**Files:** `lib/screens/analytics_screen.dart`, `lib/screens/trails_screen.dart`
 
-### L-3 — `_LocationMarker.heading` defaults to `0.0` before first GPS fix
-**File:** `lib/screens/map_screen.dart:198-201`
-Use `double?` with null guard, matching `CompassPainter.heading`.
+- `AnalyticsScreen` owns filter state (`_activePreset`, `_customRange`), `SharedPreferences` I/O, and full analytics recomputation — all inside widget `State`. This cannot be unit-tested without a widget test.
+- `TrailsScreen` (1 015 lines) performs platform I/O directly in the widget: file picker, ZIP creation, share sheet, `DeviceInfoPlugin` SDK check, and permission negotiation. This is 150+ lines of business logic with no testable seam.
 
-### L-4 — `OsmTrail` doc comment still references deleted Overpass API
-**File:** `lib/models/osm_trail.dart:3`
+**Fix (H1a):** Extract an `AnalyticsViewModel` (`ChangeNotifier`) that owns the filter state and caches `AnalyticsStats`. The screen becomes a pure View.
 
-### L-5 — `HikeRecord.name` calls `DateTime.now()` four times
-**File:** `lib/services/hike_recording_controller.dart:336-339`
-Capture once; use `DateFormat` from `intl`.
+**Fix (H1b):** Extract a `TrailsImportExportService` that owns `_importFile`, `_exportTrails`, and `_saveTrailsToDevice`. Move the `DeviceInfoPlugin` SDK check into this service.
 
-### L-6 — EMA altitude resets to 0.0 at recording start, discarding ambient baseline
-**File:** `lib/services/tracking_state.dart:151`
+---
 
-### L-7 — Three separate `ValueListenableBuilder`s for weather tiles that always update together
-**File:** `lib/screens/track_screen.dart:190-215`
+### H2 — `SharedPreferences` I/O scattered across three screens
 
-### L-8 — `analysis_options.yaml` missing useful rules
-Add: `cancel_subscriptions`, `close_sinks`, `prefer_final_fields`, `always_put_required_named_parameters_first`, `prefer_const_literals_to_create_immutables`.
+**Files:** `lib/screens/log_screen.dart:27–39`, `lib/screens/analytics_screen.dart:105–156`, `lib/screens/trails_screen.dart:82–93`
 
-### L-9 — Test coverage is zero
-**File:** `test/widget_test.dart`
-Pure-Dart logic trivially testable without Flutter or Hive: `GpxParser`, `KmlParser`, `CompassService.headingToCardinal`, `boundsForPoints`, `HikeRecord.durationFormatted`, `WeatherData` WMO mapping.
+Each screen calls `SharedPreferences.getInstance()` independently in `initState`, creating async state at the widget layer and duplicating the load/save pattern.
+
+**Fix:** Introduce a `UserPreferencesService` (following the `TilePreferenceService` pattern) that exposes `ValueNotifier` fields for each preference and is initialised once at app startup in `main.dart`.
+
+---
+
+### H3 — Weather timer fires during background GPS recording
+
+**File:** `lib/services/hike_recording_controller.dart:177–183`
+**Risk:** Up to 72 unnecessary HTTP requests during a 6-hour hike with the screen off.
+
+The `Timer.periodic` for weather fetches runs on the main isolate continuously, including when the app is backgrounded. Weather data is not displayed when the screen is off.
+
+**Fix:** Add an `AppLifecycleState` check in the weather timer callback: skip the fetch when `AppLifecycleState.paused` or `hidden`.
+
+---
+
+### H4 — Ambient GPS stream stays active when app is backgrounded without recording
+
+**File:** `lib/services/tracking_state.dart:260–268`
+
+The ambient stream (50 m filter, medium accuracy) runs continuously even when the user has backgrounded the app between hikes, keeping the GPS chip awake unnecessarily.
+
+**Fix:** Add a `WidgetsBindingObserver` to `TrackingState` that pauses the ambient stream on `AppLifecycleState.paused` and resumes on `AppLifecycleState.resumed` (when not actively recording).
+
+---
+
+### H5 — `segmentsFromPoints()` not cached — called at GPS polling frequency on `MapScreen`
+
+**Files:** `lib/screens/map_screen.dart:109`, `lib/screens/hike_detail_screen.dart:113`
+
+`segmentsFromPoints()` iterates the full point list on every GPS fix inside the `ListenableBuilder`. On `HikeDetailScreen` the route never changes after `initState()` but segments are still recomputed on every parent rebuild.
+
+**Fix (map):** Cache the segments list as a `late final` field in `HikeDetailScreen.initState()`. For `MapScreen`, consider computing segments inside `_onTrackingChanged` and storing the result in a field rather than recomputing in `build()`.
+
+---
+
+### H6 — Several `catch` blocks silently swallow errors
+
+**Files:**
+- `lib/screens/trails_screen.dart:211–214` — `FormatException` on import
+- `lib/services/hike_recording_controller.dart:256–259` — pedometer probe
+- `lib/services/hike_recording_controller.dart:362–365, 541–544` — pedometer `onError`
+- `lib/services/hike_recording_controller.dart:447–449` — foreground service stop
+
+**Fix:** Add `debugPrint` (minimum) to each catch block. The pedometer mis-cache case is especially important: a false-negative persisted to `SharedPreferences` silently disables step counting for the lifetime of the install.
+
+---
+
+### H7 — Stale CLAUDE.md note about `LogScreenState` being public
+
+**File:** `CLAUDE.md` (Important Implementation Notes section)
+
+The note says `LogScreenState` is intentionally public, but the class is `_LogScreenState` (private). The `GlobalKey` pattern was replaced by `ValueNotifier` in v1.26.0. The note is misleading.
+
+**Fix:** Remove the `LogScreenState is public` note from CLAUDE.md.
+
+---
+
+## Medium Priority Improvements
+
+### M1 — `HikeRecordingController` is a God class (600 lines, 5 responsibilities)
+
+**File:** `lib/services/hike_recording_controller.dart`
+
+Manages compass, pedometer, weather polling, GPS recording lifecycle, foreground service, checkpoint persistence, and crash recovery — all in one class.
+
+**Incremental fix:** Extract `CompassManager` (pause/resume, heading `ValueNotifier`) and `WeatherPoller` (timer, fetch guard, `WeatherData` `ValueNotifier`) as standalone services. The controller becomes a thin orchestrator, dropping from ~600 to ~300 lines. This also eliminates the `pauseCompass()`/`resumeCompass()` calls from `_HomePageState`.
+
+---
+
+### M2 — Duplicated code in `HikeRecordingController`
+
+**File:** `lib/services/hike_recording_controller.dart`
+
+- Pedometer subscription setup copy-pasted between `startRecording()` (lines 350–366) and `resumeFromRecord()` (lines 529–545): ~18 identical lines.
+- Checkpoint timer setup duplicated at lines 368–374 and 547–553.
+
+**Fix:** Extract `_startPedometerSubscription()` and `_startCheckpointTimer()` private methods.
+
+---
+
+### M3 — `TrackScreen` bypasses `HikeRecordingController` to access `TrackingState` directly
+
+**File:** `lib/screens/track_screen.dart:151, 239`
+
+Inside `ValueListenableBuilder` callbacks for `positionNotifier`, the screen reads `TrackingState.instance.ambientAltitude` and `TrackingState.instance.ambientSpeed` directly, bypassing the ValueNotifier contract.
+
+**Fix:** Add `altitudeNotifier` and `speedNotifier` (`ValueNotifier<double>`) to `HikeRecordingController`, populated in `_onTrackingChanged`. `TrackScreen` then has a single declared dependency.
+
+---
+
+### M4 — `pointCount` computed in `HikeDetailScreen.build()` at O(N)
+
+**File:** `lib/screens/hike_detail_screen.dart:76–78`
+
+```dart
+final pointCount = widget.hike.latitudes.where((lat) => !lat.isNaN).length;
+```
+
+Filters the full latitudes list on every `build()` call. `_route` and `_realPoints` are already cached as `late final` in `initState()`.
+
+**Fix:** Cache `pointCount` in `initState()` as a `late final int`.
+
+---
+
+### M5 — `_kBarColor` duplicates the theme seed colour
+
+**File:** `lib/screens/analytics_screen.dart:686`
+
+`const _kBarColor = Color(0xFF2E7D32)` is the same value as `ColorScheme.fromSeed(seedColor: Color(0xFF2E7D32))` in `main.dart`.
+
+**Fix:** Define `kBrandGreen = Color(0xFF2E7D32)` in `constants.dart` and reference it in both places.
+
+---
+
+### M6 — Two 1 000-line screen files need decomposition
+
+**Files:** `lib/screens/analytics_screen.dart` (1 022 lines), `lib/screens/trails_screen.dart` (1 015 lines)
+
+`analytics_screen.dart` contains 13 private widget classes including three chart widgets with 60–80 lines of nested `BarChartData` each.
+
+`trails_screen.dart` has a 200-line inline card builder and a 110-line `_TrailPreviewPanel.build`.
+
+**Fix:**
+- Move chart widgets to `lib/widgets/analytics_charts.dart`
+- Extract `_TrailCard` from `trails_screen.dart`'s `itemBuilder`
+- Extract `_HikeStatsSheet` from `hike_detail_screen.dart`'s `DraggableScrollableSheet` builder
+
+---
+
+### M7 — `context` used after async gap without `mounted` check
+
+**File:** `lib/screens/log_screen.dart:96–108`
+
+`_delete()` calls `HikeService.delete(hike.id)` after `await showDialog(...)` without checking `if (!mounted) return`.
+
+**Fix:** Add `if (!mounted) return;` after each `await` that is followed by a context use.
+
+---
+
+### M8 — No test coverage on critical paths
+
+**File:** `test/widget_test.dart` (single boilerplate test)
+
+Zero unit tests for GPS recording lifecycle, path simplification, checkpoint save/recovery, analytics aggregation, or GPX/KML parsing.
+
+**Suggested first tests (all pure Dart, no Flutter deps):**
+1. `path_simplifier_test.dart`
+2. `analytics_service_test.dart`
+3. `gpx_parser_test.dart` / `kml_parser_test.dart`
+
+---
+
+### M9 — Several packages are multiple major versions behind
+
+**File:** `pubspec.yaml`
+
+| Package | Current | Latest |
+|---------|---------|--------|
+| `flutter_map` | 7.0.2 | 8.2.2 |
+| `fl_chart` | 0.70.0 | 1.2.x |
+| `geolocator` | 13.x | 14.x |
+| `flutter_foreground_task` | 8.x | 9.x |
+| `file_picker` | 8.x | 10.x |
+| `share_plus` | 10.x | 12.x |
+
+`dio_cache_interceptor_db_store` is discontinued (tracked in deferred spec `tile-cache-store-migration.md`).
+
+---
+
+## Nice-to-Have Enhancements
+
+### N1 — Proactive tile pre-fetch for imported trails
+
+The tile cache is reactive (only caches tiles actually rendered on screen). A hiker browsing a trail at home will not have the closer zoom levels cached unless they manually zoom in. A bounding-box pre-fetch at zoom levels 12–16 for any loaded trail would significantly improve offline readiness in the field.
+
+---
+
+### N2 — Offline weather fallback
+
+`WeatherService` has no offline fallback. Cache the last successful `WeatherData` to `SharedPreferences` and display it with a "last updated" label when the network is unavailable.
+
+---
+
+### N3 — Make `TrackingState` and `HikeService` injectable
+
+`TrackingState.instance` is accessed directly in 4 files and `HikeService` uses only static methods. Injecting them as constructor parameters would unlock unit tests for the recording pipeline without a running GPS stack.
+
+---
+
+### N4 — Strengthen `analysis_options.yaml`
+
+Add:
+```yaml
+- always_declare_return_types
+- avoid_dynamic_calls
+- cancel_subscriptions
+- close_sinks
+- use_super_parameters
+- prefer_final_in_for_each
+```
+
+`avoid_dynamic_calls` is particularly valuable given the JSON parsing in `WeatherService`.
+
+---
+
+### N5 — Tile cache size limit
+
+`DbCacheStore` has a 30-day TTL but no maximum size cap. A `maxSize` parameter (e.g. 500 MB) would prevent unbounded disk growth on devices with limited storage.
 
 ---
 
 ## Suggested Refactoring Plan
 
-Ordered by impact-to-effort ratio. Each step is scoped to one session.
+Ordered by impact-to-effort ratio. Each step is independent unless noted.
 
-### Step 1 — Battery quick wins (½ day)
-- `bestForNavigation` → `high` (`location_service.dart:30`)
-- Add `timeInterval: 30000` to ambient stream (`location_service.dart:41-48`)
-- Add 200 ms throttle to compass stream (`hike_recording_controller.dart:196-214`)
-- Share `http.Client` in `WeatherService`
-
-### Step 2 — Fix crash risks in import pipeline (1 day)
-- Implement pure-Dart Haversine in `map_utils.dart` (replaces platform-channel calls in parsers)
-- Wrap GPX/KML parse in `compute()` (`trails_screen.dart:152-165`)
-- Promote `_bounds`/`_centroid` to `late final` in `_TrailPreviewPanelState`
-- Fix `_recordingPointController` re-creation on activity restart (`tracking_state.dart:200-204`)
-
-### Step 3 — Fix memory leak + resource disposal (½ day)
-- Convert `AboutContent` to `StatefulWidget`; dispose `TapGestureRecognizer`s
-- Fix `osmId` hash collision: use UUID string for trail selection equality
-- Add `debugPrint` to `WeatherService` catch blocks
-
-### Step 4 — `TrailsScreen` ViewModel extraction (1–2 days)
-- Implement `docs/features/trails-viewmodel-extraction.md`
-- Extracts I/O, permissions, ZIP logic into `TrailImportExportController`
-- Cache `OsmTrail` objects (fixes M-3)
-- Move ZIP compression to `compute()` (fixes medium CR-5)
-- Replace 350 ms timing hack with proper callback (fixes H-5)
-- Extract `_TrailCard` widget (fixes H-3 partly)
-
-### Step 5 — Wake lock + async error handling (½ day)
-- Implement `AppLifecycleListener` in `_HomePageState` to gate wake lock on screen state
-- Add `try/catch` to `_onPendingGuideTrail`
-- Replace `IntentHandlerService` static callbacks with broadcast streams
-
-### Step 6 — Recording pipeline hardening (1 day)
-- Remove `onError` callback from `HikeRecordingController`; expose `lastError` `ValueNotifier`
-- Move `HikeService.save()` into `compute()` when point count > 1 000
-- Fix `_stepSub.cancel()` to be awaited in `stopRecording`
-- Fix `HikeRecord` parallel arrays → `GpsPoint` Hive type (requires `build_runner`)
-
-### Step 7 — Douglas-Peucker path simplification (½ day)
-- Implement `docs/features/path-simplification.md`
-- Permanently resolves H-2, M-4, and unbounded memory growth
-
-### Step 8 — Shared widgets + code deduplication (½ day)
-- Extract `_TopoTileLayer` and `_TopoToggleFab`
-- Merge `_buildTile` / `_ElapsedTimeTile`
-- Consolidate `HikeService` / `ImportedTrailRepository` naming
-
-### Step 9 — Unit tests (ongoing)
-- `GpxParser` / `KmlParser` round-trip tests
-- `CompassService.headingToCardinal` exhaustive test
-- `boundsForPoints` edge cases (empty list, single point)
-- `WeatherData` WMO code mapping regression tests
-- Enable `cancel_subscriptions` and `close_sinks` lint rules
-
-### Step 10 — Documentation sync (½ day)
-- Reconcile `CLAUDE.md` version with `pubspec.yaml`
-- Fix stale `LogScreenState` public comment in CLAUDE.md
-- Update `OsmTrail` doc comment
-- Add milestone to `tile-cache-store-migration.md` DEFERRED label
-
----
-
-*Report generated by static analysis + manual review of all 37 Dart source files.*
+| # | Change | File(s) | Effort | Impact |
+|---|--------|---------|--------|--------|
+| 1 | Fix heading gate — move out of `assert` | `tracking_state.dart` | 15 min | 🔴 High — battery drain fix |
+| 2 | Add `mounted` check in `_delete()` | `log_screen.dart` | 5 min | 🔴 High — async safety |
+| 3 | Add `debugPrint` to all silent `catch` blocks | multiple | 30 min | 🔴 High — debugging |
+| 4 | Cache `pointCount` + segments in `initState` | `hike_detail_screen.dart` | 15 min | 🟡 Medium |
+| 5 | Add lat/lon length-parity guard | `hike_detail_screen.dart` | 10 min | 🔴 High — crash fix |
+| 6 | Remove stale `LogScreenState` CLAUDE.md note | `CLAUDE.md` | 5 min | 🟢 Low |
+| 7 | Extract `_startPedometerSubscription()` + `_startCheckpointTimer()` | `hike_recording_controller.dart` | 30 min | 🟡 Medium |
+| 8 | Add `AppLifecycleState` check to weather timer | `hike_recording_controller.dart` | 30 min | 🔴 High — battery |
+| 9 | Pause ambient GPS when backgrounded | `tracking_state.dart` | 1 h | 🔴 High — battery |
+| 10 | Move `AnalyticsService.compute()` to isolate | `analytics_screen.dart` | 1 h | 🔴 High — jank fix |
+| 11 | Introduce `UserPreferencesService` | new file + 3 screens | 2 h | 🟡 Medium |
+| 12 | Extract chart widgets to `analytics_charts.dart` | `analytics_screen.dart` | 1 h | 🟡 Medium |
+| 13 | Extract `_TrailCard` widget | `trails_screen.dart` | 1 h | 🟡 Medium |
+| 14 | Add `altitudeNotifier`/`speedNotifier` to controller | `hike_recording_controller.dart` | 30 min | 🟡 Medium |
+| 15 | Extract `TrailsImportExportService` | `trails_screen.dart` | 3 h | 🔴 High — architecture |
+| 16 | Extract `CompassManager` + `WeatherPoller` | `hike_recording_controller.dart` | 3 h | 🟡 Medium |
+| 17 | Add unit tests for parsers + analytics | `test/` | 2 h | 🔴 High — reliability |
+| 18 | Structured dependency upgrade plan | `pubspec.yaml` | 4 h | 🟡 Medium |
