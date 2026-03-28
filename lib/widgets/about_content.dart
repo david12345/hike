@@ -1,4 +1,6 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Shared visual content widget used by both [SplashScreen] and [AboutScreen].
 ///
@@ -13,6 +15,13 @@ class AboutContent extends StatelessWidget {
     super.key,
     required this.version,
   });
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   /// Builds the shared info block: icon, app name, tagline, contact, version.
   ///
@@ -42,18 +51,24 @@ class AboutContent extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Essential features for hiking',
+          'Essential tools for hiking.',
           style: TextStyle(
             color: Colors.white70,
             fontSize: 16,
           ),
         ),
         const SizedBox(height: 32),
-        const Text(
-          'github.com/david12345/hike/issues',
-          style: TextStyle(
-            color: Colors.white54,
-            fontSize: 12,
+        RichText(
+          text: TextSpan(
+            text: 'github.com/david12345/hike/issues',
+            style: const TextStyle(
+              color: Colors.lightBlueAccent,
+              fontSize: 12,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.lightBlueAccent,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => _launchUrl('https://github.com/david12345/hike/issues'),
           ),
         ),
         const SizedBox(height: 8),
@@ -62,6 +77,20 @@ class AboutContent extends StatelessWidget {
           style: const TextStyle(
             color: Colors.white54,
             fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 4),
+        RichText(
+          text: TextSpan(
+            text: 'david.a.ferreira@protonmail.com',
+            style: const TextStyle(
+              color: Colors.lightBlueAccent,
+              fontSize: 12,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.lightBlueAccent,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => _launchUrl('mailto:david.a.ferreira@protonmail.com'),
           ),
         ),
       ],
