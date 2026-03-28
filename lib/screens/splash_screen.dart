@@ -51,6 +51,10 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     setState(() {}); // version is now available; repaint before navigating
 
+    await WidgetsBinding.instance.endOfFrame;
+
+    if (!mounted) return;
+
     // Check for an interrupted recording.
     final unfinished = HikeService.findUnfinished();
     if (unfinished != null && mounted) {
