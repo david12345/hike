@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
@@ -36,10 +38,24 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
   void initState() {
     super.initState();
     _sheetController = DraggableScrollableController();
-    _route = List.generate(
-      widget.hike.latitudes.length,
-      (i) => LatLng(widget.hike.latitudes[i], widget.hike.longitudes[i]),
-    );
+
+    // Lat/lon parity guard: a crash between two Hive writes can leave
+    // latitudes and longitudes at different lengths. Truncate to the shorter
+    // list rather than crashing with an IndexError.
+    final lats = widget.hike.latitudes;
+    final lons = widget.hike.longitudes;
+    final int n;
+    if (lats.length != lons.length) {
+      debugPrint(
+        '[HikeDetail] lat/lon length mismatch for hike ${widget.hike.id}: '
+        '${lats.length} lats vs ${lons.length} lons — truncating to min.',
+      );
+      n = math.min(lats.length, lons.length);
+    } else {
+      n = lats.length;
+    }
+
+    _route = List.generate(n, (i) => LatLng(lats[i], lons[i]));
     _realPoints = _route.where((p) => !p.latitude.isNaN).toList();
     _bounds = _hasMeaningfulBounds(_realPoints)
         ? boundsForPoints(_realPoints)

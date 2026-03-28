@@ -389,23 +389,21 @@ class TrackingState extends ChangeNotifier {
       }
       _consecutiveDropped = 0;
 
-      // Heading-change gate — curve-fidelity intent.
+      // Heading-change gate — reduces accepted fixes on straight trail sections,
+      // saving battery in release builds. This guard runs unconditionally in
+      // both debug and release; wrapping it in assert() would make it a no-op
+      // in production (assert blocks are stripped by the Dart compiler).
       //
-      // With distanceFilter: 1, every platform-delivered fix has already
-      // satisfied the 1 m displacement criterion. All good fixes are
-      // accepted unconditionally; _acceptFix records pos.heading into
-      // _lastRecordedHeading so that _headingDelta stays current for the
-      // next fix. The speed guard and kHeadingChangeDegrees threshold are
-      // used here to log the heading-change trigger for diagnostics and to
-      // form the foundation for a future selective-acceptance gate if
-      // distanceFilter is raised again.
+      // Gate logic: when the hiker is moving AND the heading has not changed by
+      // at least kHeadingChangeDegrees since the last accepted fix, skip this
+      // fix. Stationary fixes (speed below kMinSpeedForHeadingTrigger) are
+      // always accepted so rest-stop timestamps are recorded accurately.
       //
       // Feature: GPS accuracy field validation (R1).
-      // If speedAccuracy is reported (> 0), require the lower bound of the
-      // speed estimate to exceed kMinSpeedForHeadingTrigger. This prevents
-      // the heading-change trigger from firing when the chipset's own
-      // speed reading is too uncertain to distinguish movement from noise.
-      assert(() {
+      // If speedAccuracy is reported (> 0), use the lower bound of the speed
+      // estimate so the gate does not fire when the chipset is too uncertain
+      // about speed to distinguish movement from noise.
+      {
         final bool isMoving;
         if (pos.speedAccuracy > 0.0) {
           isMoving = (pos.speed - pos.speedAccuracy) >= kMinSpeedForHeadingTrigger;
@@ -413,17 +411,31 @@ class TrackingState extends ChangeNotifier {
           isMoving = pos.speed >= kMinSpeedForHeadingTrigger;
         }
         final delta = _headingDelta(pos.heading, _lastRecordedHeading);
-        if (isMoving && delta >= kHeadingChangeDegrees) {
-          final saStr = pos.speedAccuracy > 0.0
-              ? ' (speedAcc: ${pos.speedAccuracy.toStringAsFixed(2)} m/s)'
-              : '';
-          debugPrint(
-            'GPS heading change: ${delta.toStringAsFixed(1)}° '
-            'at ${pos.speed.toStringAsFixed(2)} m/s$saStr',
-          );
+        // Log heading-change triggers in debug builds for diagnostics.
+        assert(() {
+          if (isMoving && delta >= kHeadingChangeDegrees) {
+            final saStr = pos.speedAccuracy > 0.0
+                ? ' (speedAcc: ${pos.speedAccuracy.toStringAsFixed(2)} m/s)'
+                : '';
+            debugPrint(
+              'GPS heading change: ${delta.toStringAsFixed(1)}° '
+              'at ${pos.speed.toStringAsFixed(2)} m/s$saStr',
+            );
+          }
+          return true;
+        }());
+        // Skip the fix when moving in a straight line (below heading threshold).
+        // Always accept the first fix of a session (_lastRecordedHeading is null
+        // so delta is 0 — we must not gate out the session-start fix).
+        // Note: _updateFromPosition() has already been called unconditionally at
+        // the top of _onRecordingFix, so ambient fields remain current even when
+        // returning early here.
+        if (_lastRecordedHeading != null &&
+            isMoving &&
+            delta < kHeadingChangeDegrees) {
+          return;
         }
-        return true;
-      }());
+      }
 
       // Stationary detection state machine.
       if (pos.speed < kStationarySpeedThreshold) {

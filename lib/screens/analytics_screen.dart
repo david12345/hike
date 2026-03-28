@@ -1,4 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -81,6 +82,23 @@ extension _PresetExt on _Preset {
 }
 
 // ---------------------------------------------------------------------------
+// Isolate helpers (must be top-level for compute())
+// ---------------------------------------------------------------------------
+
+/// Payload passed to the background isolate.
+class _AnalyticsInput {
+  final List<HikeRecord> filtered;
+  final List<HikeRecord> allHikes;
+
+  const _AnalyticsInput({required this.filtered, required this.allHikes});
+}
+
+/// Top-level entry point required by Flutter's [compute] function.
+AnalyticsStats _runAnalytics(_AnalyticsInput input) {
+  return AnalyticsService.compute(input.filtered, input.allHikes);
+}
+
+// ---------------------------------------------------------------------------
 // Main screen
 // ---------------------------------------------------------------------------
 
@@ -96,10 +114,65 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   DateTimeRange? _customRange;
   bool _prefsLoaded = false;
 
+  /// Monotonically increasing counter used to discard results from superseded
+  /// computations triggered while a previous isolate is still running.
+  int _computeGeneration = 0;
+
+  /// Most recently completed analytics result. Displayed while a new
+  /// computation is in progress to prevent the screen from going blank.
+  AnalyticsStats? _cachedStats;
+
+  /// The in-flight compute Future. Rebuilt whenever [HikeService.version] or
+  /// the active filter changes.
+  Future<AnalyticsStats>? _statsFuture;
+
   @override
   void initState() {
     super.initState();
+    HikeService.version.addListener(_onVersionChanged);
     _loadPrefs();
+  }
+
+  @override
+  void dispose() {
+    HikeService.version.removeListener(_onVersionChanged);
+    super.dispose();
+  }
+
+  void _onVersionChanged() {
+    _triggerRecompute();
+  }
+
+  /// Launches a background isolate computation, cancelling any in-flight result.
+  void _triggerRecompute() {
+    if (!_prefsLoaded) return;
+    final gen = ++_computeGeneration;
+    final allHikes = HikeService.getAll();
+    final filtered = _applyFilter(allHikes);
+    final future = compute(
+      _runAnalytics,
+      _AnalyticsInput(filtered: filtered, allHikes: allHikes),
+    );
+    setState(() {
+      _statsFuture = future;
+    });
+    future.then((stats) {
+      if (!mounted) return;
+      if (gen != _computeGeneration) return; // superseded
+      setState(() {
+        _cachedStats = stats;
+        _statsFuture = null;
+      });
+    }).catchError((Object e) {
+      if (!mounted) return;
+      if (gen != _computeGeneration) return;
+      debugPrint('[Analytics] isolate error: $e');
+      // Keep previous cached result; clear future so UI does not stay in
+      // loading state indefinitely.
+      setState(() {
+        _statsFuture = null;
+      });
+    });
   }
 
   Future<void> _loadPrefs() async {
@@ -123,6 +196,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _customRange = custom;
         _prefsLoaded = true;
       });
+      _triggerRecompute();
     }
   }
 
@@ -147,6 +221,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       _customRange = null;
     });
     _savePrefs();
+    _triggerRecompute();
   }
 
   void _applyCustomRange(DateTimeRange range) {
@@ -155,6 +230,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       _customRange = range;
     });
     _savePrefs();
+    _triggerRecompute();
   }
 
   /// Returns the effective date range (null means "all time").
@@ -189,29 +265,43 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: HikeService.version,
-      builder: (context, _) {
-        final allHikes = HikeService.getAll();
-        final filtered = _applyFilter(allHikes);
-        final stats = AnalyticsService.compute(filtered, allHikes);
+    // Determine whether a background computation is currently running.
+    final bool isComputing = _statsFuture != null;
+    // Use the most recently completed result, or empty while loading the first.
+    final stats = _cachedStats ?? AnalyticsStats.empty;
+    // Snapshot the filter state for the empty-state check below.
+    final allHikes = HikeService.getAll();
+    final filtered = _applyFilter(allHikes);
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Stats'),
-            centerTitle: true,
-            actions: [
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'about') _openAbout(context);
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'about', child: Text('About')),
-                ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Stats'),
+        centerTitle: true,
+        actions: [
+          // Show a small loading indicator in the AppBar while computing.
+          if (isComputing)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
+            ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'about') _openAbout(context);
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'about', child: Text('About')),
             ],
           ),
-          body: !_prefsLoaded
+        ],
+      ),
+      body: !_prefsLoaded
+          ? const Center(child: CircularProgressIndicator())
+          : _cachedStats == null && isComputing
+              // First-load: no cached result yet — show a spinner.
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -255,8 +345,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ],
                   ),
                 ),
-        );
-      },
     );
   }
 }
