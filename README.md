@@ -68,6 +68,29 @@ flutter build apk --release
 
 ---
 
+## Android Auto — Development Setup
+
+Hike supports Android Auto and displays a live OSM map, compass heading, and GPS coordinates on the car display.
+
+### Sideloaded APK — required one-time setup
+
+APKs installed outside the Play Store (via `adb install` or downloaded from GitHub Releases) are blocked from appearing in Android Auto by default. To allow sideloaded apps:
+
+1. Open the **Android Auto** app on the phone.
+2. Tap the **version string** in the top-right of the main screen **ten times** in rapid succession. A "Developer mode enabled" toast should appear.
+3. Open the **three-dot overflow menu** (top-right) → tap **Developer settings**.
+4. Scroll to find **"Unknown sources"** and toggle it **on**.
+5. Disconnect and reconnect the USB cable (or restart Android Auto).
+6. The Hike app should now appear in the Android Auto app launcher.
+
+> **Note:** This step must be repeated after a factory reset or after reinstalling the Android Auto app.
+
+### Usage
+
+Connect the phone to a car head unit or the [Desktop Head Unit (DHU)](https://developer.android.com/training/cars/testing/dhu) emulator. Open Android Auto and tap the Hike icon to launch the navigation screen.
+
+---
+
 ## Map data
 
 Map tiles and data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), licensed under [ODbL](https://opendatacommons.org/licenses/odbl/).

@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.35.0+42 |
+| Version | 1.36.0+43 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -285,6 +285,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.33.0 | Android Auto screen: compass, lat/lon/alt, live OSM tile map via native CarAppService + MethodChannel bridge |
 | v1.34.0 | Satellite map view: three-way tile cycle OSM → Topo → Satellite using Esri World Imagery; TileMode enum replaces bool; FAB icon previews next state |
 | v1.35.0 | Douglas-Peucker path simplification at save time: pure-Dart, NaN-gap-aware, epsilon = 3 m; ~90% point reduction on long hikes |
+| v1.36.0 | Android Auto visibility fix: move setSurfaceCallback to onGetTemplate(), AutoDataPlugin FlutterPlugin, document Unknown sources setup |
 
 ---
 
@@ -377,3 +378,4 @@ All feature specs are in `docs/features/`:
 | `android-auto-screen.md` | Android Auto screen: compass, lat/lon/altitude, and live OSM tile map via native CarAppService + EventChannel bridge |
 | `satellite-map-view.md` | Extend tile toggle to three-way cycle: OSM → Topo → Satellite → OSM using Esri World Imagery (free, no API key) |
 | `path-simplification-dp.md` | Douglas-Peucker path simplification at save time: pure-Dart, NaN-gap-aware, epsilon = 3 m, applied once in stopRecording() |
+| `android-auto-visibility-fix.md` | Fix app not appearing in Android Auto: move setSurfaceCallback to onGetTemplate(), add Unknown sources step, move MethodChannel handler to FlutterPlugin |

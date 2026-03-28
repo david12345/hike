@@ -15,6 +15,7 @@ import kotlin.math.roundToInt
 class HikeCarScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback {
 
     private val renderer = AutoTileRenderer(carContext)
+    private var surfaceCallbackRegistered = false
 
     companion object {
         @Volatile private var currentInstance: HikeCarScreen? = null
@@ -46,12 +47,13 @@ class HikeCarScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
 
     init {
         currentInstance = this
-        // Register this screen as the SurfaceCallback so the Car App Library
-        // delivers surface lifecycle events to us.
-        carContext.getCarService(AppManager::class.java).setSurfaceCallback(this)
     }
 
     override fun onGetTemplate(): Template {
+        if (!surfaceCallbackRegistered) {
+            carContext.getCarService(AppManager::class.java).setSurfaceCallback(this)
+            surfaceCallbackRegistered = true
+        }
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
