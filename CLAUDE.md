@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.31.0+38 |
+| Version | 1.32.0+39 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -281,6 +281,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.29.0 | Remove hiker animation entirely (delete hiker_animation.dart); unify AboutContent layout; splash screen shows version centred like About tab |
 | v1.30.0 | True-center layout on Splash and About: replace SafeArea+Spacers with Center widget in AboutContent |
 | v1.31.0 | GPS recording density: distanceFilter 3 m → 1 m, timeInterval 5 s → 2 s, heading-change trigger (10°) with speed guard (0.3 m/s) to faithfully capture roundabouts and switchbacks |
+| v1.32.0 | Fix version blank on splash: await endOfFrame after setState so version is painted before Navigator.pushReplacement fires |
 
 ---
 
@@ -369,3 +370,4 @@ All feature specs are in `docs/features/`:
 | `recording-time-interval.md` | Add 5 s time-based sampling interval (Android AndroidSettings) alongside 3 m distance filter to capture slow movement and tight switchbacks |
 | `recording-accuracy-adaptive.md` | Buffer poor-quality fixes for up to 15 s; use best buffered fix on recovery; insert gap marker on timeout (depends on recording-gap-detection.md) |
 | `gps-recording-density.md` | Reduce distance filter to 1 m, time interval to 2 s, and add heading-change-triggered sampling to capture roundabouts and switchbacks faithfully |
+| `splash-version-fix.md` | Definitive fix for version blank on splash: await endOfFrame after setState so rebuild is painted before navigation |
