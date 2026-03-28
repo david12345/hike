@@ -95,6 +95,15 @@ class TrackingState extends ChangeNotifier {
   /// Poor-quality fixes held while waiting for signal recovery.
   final List<_BufferedFix> _accuracyBuffer = [];
 
+  /// Whether the recording stream is currently in low-frequency stationary mode.
+  bool _stationaryMode = false;
+
+  /// Number of consecutive accepted fixes below [kStationarySpeedThreshold].
+  ///
+  /// When this exceeds `kStationaryDebounceSecs / kRecordingTimeIntervalSeconds`
+  /// the stream switches to stationary mode.
+  int _stationaryCounter = 0;
+
   /// Wall time when the first buffered fix was received.
   DateTime? _bufferStartedAt;
 
@@ -190,6 +199,8 @@ class TrackingState extends ChangeNotifier {
     _accuracyBuffer.clear();
     _bufferStartedAt = null;
     _lastRecordedHeading = null;
+    _stationaryMode = false;
+    _stationaryCounter = 0;
     _startRecordingStream();
     notifyListeners();
   }
@@ -237,6 +248,8 @@ class TrackingState extends ChangeNotifier {
     _accuracyBuffer.clear();
     _bufferStartedAt = null;
     _lastRecordedHeading = null;
+    _stationaryMode = false;
+    _stationaryCounter = 0;
     _startAmbientStream();
     notifyListeners();
   }
@@ -310,7 +323,8 @@ class TrackingState extends ChangeNotifier {
     return delta > 180 ? 360 - delta : delta;
   }
 
-  /// Starts the high-accuracy recording GPS stream.
+  /// Starts the high-accuracy recording GPS stream in moving (high-frequency)
+  /// mode.
   ///
   /// Fixes with [Position.accuracy] > [kMaxAcceptableAccuracyMetres] are
   /// held in a short adaptive buffer waiting for recovery. If signal recovers
@@ -320,115 +334,226 @@ class TrackingState extends ChangeNotifier {
   void _startRecordingStream() {
     _streamSub?.cancel();
     _consecutiveDropped = 0;
-    _streamSub = LocationService.trackPosition().listen(
-      (pos) {
-        _updateFromPosition(pos);
-        final now = DateTime.now();
+    _streamSub = LocationService.trackPosition().listen(_onRecordingFix);
+  }
 
-        if (pos.accuracy <= kMaxAcceptableAccuracyMetres) {
-          // Good fix — commit any buffered fix first.
-          if (_accuracyBuffer.isNotEmpty) {
-            final best = _accuracyBuffer.reduce(
-              (a, b) => a.accuracy <= b.accuracy ? a : b,
-            );
-            _accuracyBuffer.clear();
-            _bufferStartedAt = null;
-            _acceptFix(best.lat, best.lon, best.heading, best.receivedAt);
-          }
-          _consecutiveDropped = 0;
+  /// Switches the recording stream to low-frequency stationary mode.
+  ///
+  /// Called after the hiker has remained below [kStationarySpeedThreshold]
+  /// for [kStationaryDebounceSecs] consecutive seconds.
+  /// [_lastAcceptedFixAt] is preserved so gap detection continues correctly
+  /// across the brief subscription gap during the stream restart.
+  void _switchToStationaryMode() {
+    _streamSub?.cancel();
+    _stationaryMode = true;
+    _stationaryCounter = 0;
+    _streamSub =
+        LocationService.trackPositionStationary().listen(_onRecordingFix);
+    debugPrint('GPS: switched to stationary mode (low-frequency recording)');
+  }
 
-          // Heading-change gate — curve-fidelity intent.
-          //
-          // With distanceFilter: 1, every platform-delivered fix has already
-          // satisfied the 1 m displacement criterion. All good fixes are
-          // accepted unconditionally; _acceptFix records pos.heading into
-          // _lastRecordedHeading so that _headingDelta stays current for the
-          // next fix. The speed guard and kHeadingChangeDegrees threshold are
-          // used here to log the heading-change trigger for diagnostics and to
-          // form the foundation for a future selective-acceptance gate if
-          // distanceFilter is raised again.
-          assert(() {
-            final isMoving = pos.speed >= kMinSpeedForHeadingTrigger;
-            final delta = _headingDelta(pos.heading, _lastRecordedHeading);
-            if (isMoving && delta >= kHeadingChangeDegrees) {
-              debugPrint(
-                'GPS heading change: ${delta.toStringAsFixed(1)}° '
-                'at ${pos.speed.toStringAsFixed(2)} m/s',
-              );
-            }
-            return true;
-          }());
-          _acceptFix(pos.latitude, pos.longitude, pos.heading, now);
+  /// Switches the recording stream back to high-frequency moving mode.
+  ///
+  /// Called on the first accepted fix that exceeds [kStationarySpeedThreshold]
+  /// after a stationary period.
+  void _switchToMovingMode() {
+    _streamSub?.cancel();
+    _stationaryMode = false;
+    _stationaryCounter = 0;
+    _streamSub = LocationService.trackPosition().listen(_onRecordingFix);
+    debugPrint('GPS: switched to moving mode (high-frequency recording)');
+  }
+
+  /// Shared handler for every GPS fix during recording, regardless of stream
+  /// mode (high-frequency moving or low-frequency stationary).
+  ///
+  /// Applies:
+  /// 1. Ambient field updates ([_updateFromPosition]).
+  /// 2. The horizontal accuracy gate and adaptive buffer.
+  /// 3. The heading-change diagnostic log (debug builds only).
+  /// 4. The stationary detection state machine.
+  /// 5. Fix acceptance via [_acceptFix].
+  void _onRecordingFix(Position pos) {
+    _updateFromPosition(pos);
+    final now = DateTime.now();
+
+    if (pos.accuracy <= kMaxAcceptableAccuracyMetres) {
+      // Good fix — commit any buffered fix first.
+      if (_accuracyBuffer.isNotEmpty) {
+        final best = _accuracyBuffer.reduce(
+          (a, b) => a.accuracy <= b.accuracy ? a : b,
+        );
+        _accuracyBuffer.clear();
+        _bufferStartedAt = null;
+        _acceptFix(best.lat, best.lon, best.heading, best.receivedAt);
+      }
+      _consecutiveDropped = 0;
+
+      // Heading-change gate — curve-fidelity intent.
+      //
+      // With distanceFilter: 1, every platform-delivered fix has already
+      // satisfied the 1 m displacement criterion. All good fixes are
+      // accepted unconditionally; _acceptFix records pos.heading into
+      // _lastRecordedHeading so that _headingDelta stays current for the
+      // next fix. The speed guard and kHeadingChangeDegrees threshold are
+      // used here to log the heading-change trigger for diagnostics and to
+      // form the foundation for a future selective-acceptance gate if
+      // distanceFilter is raised again.
+      //
+      // Feature: GPS accuracy field validation (R1).
+      // If speedAccuracy is reported (> 0), require the lower bound of the
+      // speed estimate to exceed kMinSpeedForHeadingTrigger. This prevents
+      // the heading-change trigger from firing when the chipset's own
+      // speed reading is too uncertain to distinguish movement from noise.
+      assert(() {
+        final bool isMoving;
+        if (pos.speedAccuracy > 0.0) {
+          isMoving = (pos.speed - pos.speedAccuracy) >= kMinSpeedForHeadingTrigger;
         } else {
-          // Poor fix — add to adaptive buffer.
-          _consecutiveDropped++;
-          if (_consecutiveDropped == _kConsecutiveDropThreshold) {
-            debugPrint(
-              'GPS quality warning: $_kConsecutiveDropThreshold consecutive '
-              'fixes exceeded accuracy threshold. Last accuracy: '
-              '${pos.accuracy.toStringAsFixed(1)} m. '
-              'Recording paused until signal improves.',
-            );
-            _consecutiveDropped = 0;
-          }
-
-          _bufferStartedAt ??= now;
-
-          if (_accuracyBuffer.length < kAdaptiveBufferMaxFixes) {
-            _accuracyBuffer.add(_BufferedFix(
-              lat: pos.latitude,
-              lon: pos.longitude,
-              accuracy: pos.accuracy,
-              heading: pos.heading,
-              receivedAt: now,
-            ));
-          } else {
-            // Replace the worst fix to keep buffer bounded.
-            int worstIdx = 0;
-            for (var i = 1; i < _accuracyBuffer.length; i++) {
-              if (_accuracyBuffer[i].accuracy >
-                  _accuracyBuffer[worstIdx].accuracy) {
-                worstIdx = i;
-              }
-            }
-            if (pos.accuracy < _accuracyBuffer[worstIdx].accuracy) {
-              _accuracyBuffer[worstIdx] = _BufferedFix(
-                lat: pos.latitude,
-                lon: pos.longitude,
-                accuracy: pos.accuracy,
-                heading: pos.heading,
-                receivedAt: now,
-              );
-            }
-          }
-
-          // Buffer timeout — flush and insert gap marker.
-          final bufferAge =
-              now.difference(_bufferStartedAt!).inSeconds;
-          if (bufferAge >= kAdaptiveBufferWindowSeconds) {
-            _accuracyBuffer.clear();
-            _bufferStartedAt = null;
-            _insertGapMarker();
-            _lastAcceptedFixAt = null;
-          }
-
-          notifyListeners();
+          isMoving = pos.speed >= kMinSpeedForHeadingTrigger;
         }
-      },
-    );
+        final delta = _headingDelta(pos.heading, _lastRecordedHeading);
+        if (isMoving && delta >= kHeadingChangeDegrees) {
+          final saStr = pos.speedAccuracy > 0.0
+              ? ' (speedAcc: ${pos.speedAccuracy.toStringAsFixed(2)} m/s)'
+              : '';
+          debugPrint(
+            'GPS heading change: ${delta.toStringAsFixed(1)}° '
+            'at ${pos.speed.toStringAsFixed(2)} m/s$saStr',
+          );
+        }
+        return true;
+      }());
+
+      // Stationary detection state machine.
+      if (pos.speed < kStationarySpeedThreshold) {
+        _stationaryCounter++;
+        // Debounce: require kStationaryDebounceSecs of continuous low speed.
+        const threshold =
+            kStationaryDebounceSecs ~/ kRecordingTimeIntervalSeconds;
+        if (_stationaryCounter >= threshold && !_stationaryMode) {
+          _acceptFix(pos.latitude, pos.longitude, pos.heading, now);
+          _switchToStationaryMode();
+          return;
+        }
+      } else {
+        _stationaryCounter = 0;
+        if (_stationaryMode) {
+          // Hiker is moving again — accept this fix then switch back.
+          _acceptFix(pos.latitude, pos.longitude, pos.heading, now);
+          _switchToMovingMode();
+          return;
+        }
+      }
+
+      _acceptFix(pos.latitude, pos.longitude, pos.heading, now);
+    } else {
+      // Poor fix — add to adaptive buffer.
+      _consecutiveDropped++;
+      if (_consecutiveDropped == _kConsecutiveDropThreshold) {
+        debugPrint(
+          'GPS quality warning: $_kConsecutiveDropThreshold consecutive '
+          'fixes exceeded accuracy threshold. Last accuracy: '
+          '${pos.accuracy.toStringAsFixed(1)} m. '
+          'Recording paused until signal improves.',
+        );
+        _consecutiveDropped = 0;
+      }
+
+      _bufferStartedAt ??= now;
+
+      if (_accuracyBuffer.length < kAdaptiveBufferMaxFixes) {
+        _accuracyBuffer.add(_BufferedFix(
+          lat: pos.latitude,
+          lon: pos.longitude,
+          accuracy: pos.accuracy,
+          heading: pos.heading,
+          receivedAt: now,
+        ));
+      } else {
+        // Replace the worst fix to keep buffer bounded.
+        int worstIdx = 0;
+        for (var i = 1; i < _accuracyBuffer.length; i++) {
+          if (_accuracyBuffer[i].accuracy >
+              _accuracyBuffer[worstIdx].accuracy) {
+            worstIdx = i;
+          }
+        }
+        if (pos.accuracy < _accuracyBuffer[worstIdx].accuracy) {
+          _accuracyBuffer[worstIdx] = _BufferedFix(
+            lat: pos.latitude,
+            lon: pos.longitude,
+            accuracy: pos.accuracy,
+            heading: pos.heading,
+            receivedAt: now,
+          );
+        }
+      }
+
+      // Buffer timeout — flush and insert gap marker.
+      final bufferAge = now.difference(_bufferStartedAt!).inSeconds;
+      if (bufferAge >= kAdaptiveBufferWindowSeconds) {
+        _accuracyBuffer.clear();
+        _bufferStartedAt = null;
+        _insertGapMarker();
+        _lastAcceptedFixAt = null;
+      }
+
+      notifyListeners();
+    }
   }
 
   /// Updates all ambient fields from a raw [Position] event.
   ///
   /// Altitude is smoothed with an exponential moving average to reduce
   /// +-10-30 m jitter typical of consumer GPS chipsets.
+  ///
+  /// Feature: GPS accuracy field validation (R2, R3).
+  /// If [Position.altitudeAccuracy] is reported (> 0) and exceeds
+  /// [kMaxAcceptableAccuracyMetres], the EMA update is skipped — the
+  /// previous smoothed altitude is preserved rather than being shifted by
+  /// a low-quality reading. When altitudeAccuracy is 0.0 (unavailable on
+  /// older devices), the EMA is applied unconditionally as before.
   void _updateFromPosition(Position pos) {
     _ambientPosition = LatLng(pos.latitude, pos.longitude);
     _ambientHeading = pos.heading;
-    _ambientAltitude = _ambientAltitude == 0.0
-        ? pos.altitude
-        : _ambientAltitude * (1 - _kAltitudeEmaAlpha) +
-            pos.altitude * _kAltitudeEmaAlpha;
+
+    // Altitude accuracy gate (R2).
+    final bool altitudeIsReliable =
+        pos.altitudeAccuracy == 0.0 || // unavailable → assume good
+        pos.altitudeAccuracy <= kMaxAcceptableAccuracyMetres;
+
+    if (altitudeIsReliable) {
+      _ambientAltitude = _ambientAltitude == 0.0
+          ? pos.altitude
+          : _ambientAltitude * (1 - _kAltitudeEmaAlpha) +
+              pos.altitude * _kAltitudeEmaAlpha;
+    } else {
+      // Log poor altitude fix in debug builds (R3).
+      assert(() {
+        debugPrint(
+          'GPS altitude skipped: altitudeAccuracy '
+          '${pos.altitudeAccuracy.toStringAsFixed(1)} m exceeds threshold '
+          '${kMaxAcceptableAccuracyMetres.toStringAsFixed(0)} m — '
+          'EMA unchanged at ${_ambientAltitude.toStringAsFixed(1)} m',
+        );
+        return true;
+      }());
+    }
+
+    // Log non-zero accuracy fields in debug builds (R3).
+    assert(() {
+      if (pos.speedAccuracy > 0.0 || pos.altitudeAccuracy > 0.0) {
+        debugPrint(
+          'GPS accuracy fields — '
+          'horiz: ${pos.accuracy.toStringAsFixed(1)} m  '
+          'speed: ${pos.speedAccuracy.toStringAsFixed(2)} m/s  '
+          'alt: ${pos.altitudeAccuracy.toStringAsFixed(1)} m',
+        );
+      }
+      return true;
+    }());
+
     _ambientSpeed = pos.speed;
     _lastAccuracy = pos.accuracy;
   }

@@ -90,3 +90,36 @@ const kPathSimplificationEpsilonMetres = 3.0;
 /// Must be a positive integer unique within the app's notification namespace.
 /// Value 256 is chosen to avoid collision with system-reserved IDs.
 const kForegroundServiceId = 256;
+
+// ---------------------------------------------------------------------------
+// Smart stationary detection
+// ---------------------------------------------------------------------------
+
+/// Speed threshold (m/s) below which the hiker is considered stationary.
+///
+/// 0.5 m/s (1.8 km/h) is a deliberate walk; below this the hiker is
+/// stopping or shuffling. At 0.5 m/s the heading reading is also
+/// unreliable, so this threshold matches the conditions where dense
+/// GPS sampling has no fidelity benefit.
+const kStationarySpeedThreshold = 0.5;
+
+/// Elapsed seconds of sub-threshold speed before the recording stream
+/// switches to stationary (low-frequency) mode.
+///
+/// 10 seconds prevents mode-switching during momentary pauses (tying a
+/// lace, looking at the phone) while being short enough to avoid capturing
+/// many unnecessary fixes before the switch takes effect.
+const kStationaryDebounceSecs = 10;
+
+/// Distance filter (metres) used in stationary recording mode.
+///
+/// 10 m means the platform delivers a fix only if the device has genuinely
+/// moved 10 m — effectively suppressing jitter and chipset wake-ups
+/// during a rest stop.
+const kStationaryDistanceFilterMetres = 10;
+
+/// Time interval (seconds) used in stationary recording mode (Android only).
+///
+/// 10 seconds is a low-power rate that still captures the moment the hiker
+/// resumes walking (first fix within 10 s of movement).
+const kStationaryTimeIntervalSeconds = 10;

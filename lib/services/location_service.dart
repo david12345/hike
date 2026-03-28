@@ -45,6 +45,30 @@ class LocationService {
     );
   }
 
+  /// Low-frequency recording stream for stationary periods.
+  ///
+  /// Uses a [kStationaryDistanceFilterMetres] distance filter and
+  /// [kStationaryTimeIntervalSeconds] interval to minimise GPS chipset
+  /// wake-ups while the hiker is at rest.
+  static Stream<Position> trackPositionStationary() {
+    if (Platform.isAndroid) {
+      return Geolocator.getPositionStream(
+        locationSettings: AndroidSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: kStationaryDistanceFilterMetres,
+          intervalDuration:
+              const Duration(seconds: kStationaryTimeIntervalSeconds),
+        ),
+      );
+    }
+    return Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: kStationaryDistanceFilterMetres,
+      ),
+    );
+  }
+
   /// Returns a low-power GPS stream suitable for ambient (non-recording) use.
   ///
   /// Uses network-assisted positioning (`LocationAccuracy.medium`) with a
