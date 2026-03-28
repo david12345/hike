@@ -71,7 +71,7 @@
       font-size: clamp(1rem, 3.5vw, 1.35rem);
       opacity: 0.88;
       max-width: 480px;
-      margin: 0 auto 36px;
+      margin: 0 auto 8px;
     }
 
     .btn-download {
@@ -98,6 +98,13 @@
       vertical-align: middle;
       margin-right: 8px;
       margin-top: -2px;
+    }
+
+    .version-badge {
+      font-size: 0.85rem;
+      opacity: 0.75;
+      margin-bottom: 28px;
+      letter-spacing: 0.04em;
     }
 
     .badge-row {
@@ -377,6 +384,7 @@
       <h1>Hike</h1>
     </div>
     <p class="tagline">Essential tools for hiking</p>
+    <p class="version-badge" id="app-version"></p>
     <a class="btn-download"
        href="https://github.com/david12345/hike/releases/latest/download/hike.apk"
        download>
@@ -523,5 +531,14 @@
     <p style="margin-top:6px;">Weather data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (open-source weather API)</p>
   </footer>
 
+  <script>
+    fetch('https://api.github.com/repos/david12345/hike/releases/latest')
+      .then(r => r.json())
+      .then(data => {
+        const el = document.getElementById('app-version');
+        if (el && data.tag_name) el.textContent = data.tag_name;
+      })
+      .catch(() => {});
+  </script>
 </body>
 </html>
