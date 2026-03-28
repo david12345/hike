@@ -387,3 +387,31 @@ All feature specs are in `docs/features/`:
 | `analytics-screen.md` | Analytics screen: date range filter, summary metrics grid, personal bests, streaks, Distance by Month / Day of Week / Distribution bar charts |
 | `log-screen-sort-order.md` | Sort toggle (newest/oldest first) in Log screen app bar; persisted via SharedPreferences |
 | `trails-screen-sort-order.md` | Sort toggle (A → Z / Z → A) in Trails screen normal-mode app bar; persisted via SharedPreferences |
+| `analytics-isolate-compute.md` | Move AnalyticsService.compute() to a compute() isolate to prevent UI jank on large hike logs (C1) |
+| `hike-record-latlng-parity-guard.md` | Add lat/lon length-parity guard in HikeDetailScreen.initState() to prevent IndexError on corrupted records (C2) |
+| `heading-gate-release-fix.md` | Move heading-change gate out of assert so it runs in release builds and saves battery (C3) |
+| `analytics-viewmodel.md` | Extract AnalyticsViewModel ChangeNotifier from AnalyticsScreen; cache AnalyticsStats; screen becomes pure View (H1a) |
+| `trails-import-export-service.md` | Extract TrailsImportExportService from TrailsScreen; move file picker, ZIP, share, permission, DeviceInfoPlugin logic out of widget (H1b) |
+| `user-preferences-service.md` | Introduce UserPreferencesService singleton to centralise all SharedPreferences I/O from LogScreen, AnalyticsScreen, TrailsScreen (H2) |
+| `weather-timer-lifecycle.md` | Skip weather fetches when app is backgrounded via AppLifecycleState check (H3) |
+| `ambient-gps-background-pause.md` | Pause ambient GPS stream when app is backgrounded without recording, resume on foreground (H4) |
+| `segments-cache.md` | Cache segmentsFromPoints() result as late final in HikeDetailScreen.initState(); update on tracking change in MapScreen (H5) |
+| `silent-catch-logging.md` | Add debugPrint to all silent catch blocks in trails_screen, hike_recording_controller (H6) |
+| `remove-stale-logscreenstate-note.md` | Remove stale LogScreenState is public note from CLAUDE.md (H7) |
+| `compass-manager-extraction.md` | Extract CompassManager service from HikeRecordingController; expose heading ValueNotifier; eliminates pauseCompass/resumeCompass from _HomePageState (M1 part 1) |
+| `weather-poller-extraction.md` | Extract WeatherPoller service from HikeRecordingController; expose WeatherData ValueNotifier; owns timer and fetch guard (M1 part 2) |
+| `recording-controller-deduplication.md` | Extract _startPedometerSubscription() and _startCheckpointTimer() private methods to remove duplicated blocks in startRecording() and resumeFromRecord() (M2) |
+| `track-screen-altitude-speed-notifiers.md` | Add altitudeNotifier and speedNotifier to HikeRecordingController; remove direct TrackingState.instance access from TrackScreen (M3) |
+| `hike-detail-point-count-cache.md` | Cache pointCount as late final int in HikeDetailScreen.initState() (M4) |
+| `brand-green-constant.md` | Define kBrandGreen in constants.dart; replace duplicate Color(0xFF2E7D32) literals in analytics_screen.dart and main.dart (M5) |
+| `analytics-charts-extraction.md` | Move _MonthlyDistanceChart, _DayOfWeekChart, _DistributionChart to lib/widgets/analytics_charts.dart (M6 part 1) |
+| `trail-card-extraction.md` | Extract _TrailCard stateless widget from TrailsScreen._buildBody itemBuilder (M6 part 2) |
+| `hike-stats-sheet-extraction.md` | Extract _HikeStatsSheet widget from HikeDetailScreen DraggableScrollableSheet builder (M6 part 3) |
+| `async-mounted-check.md` | Add if (!mounted) return after every await followed by context use in LogScreen._delete() and other async gaps (M7) |
+| `unit-tests-pure-dart.md` | Add unit tests for PathSimplifier, AnalyticsService, GpxParser, KmlParser (M8) |
+| `dependency-upgrade-plan.md` | Structured plan for upgrading flutter_map 7->8, fl_chart 0.70->1.2, geolocator 13->14, flutter_foreground_task 8->9, file_picker 8->10, share_plus 10->12 (M9) |
+| `tile-prefetch-route.md` | Proactive tile pre-fetch for loaded trail bounding box at zoom levels 12-16 (N1) |
+| `offline-weather-cache.md` | Cache last successful WeatherData to SharedPreferences; display with last updated label when offline (N2) |
+| `injectable-services.md` | Make TrackingState and HikeService injectable (constructor params) to enable unit testing of recording pipeline (N3) |
+| `analysis-options-strengthen.md` | Add always_declare_return_types, avoid_dynamic_calls, cancel_subscriptions, close_sinks, use_super_parameters, prefer_final_in_for_each to analysis_options.yaml (N4) |
+| `tile-cache-size-limit.md` | Add maximum size cap (500 MB) to DbCacheStore to prevent unbounded disk growth (N5) |
