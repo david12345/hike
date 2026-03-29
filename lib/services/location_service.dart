@@ -34,6 +34,12 @@ class LocationService {
           distanceFilter: kRecordingDistanceFilterMetres,
           intervalDuration:
               const Duration(seconds: kRecordingTimeIntervalSeconds),
+          foregroundNotificationConfig: const ForegroundNotificationConfig(
+            notificationChannelName: 'Hike Tracking',
+            notificationTitle: 'Hike',
+            notificationText: 'Recording your route',
+            enableWakeLock: true,
+          ),
         ),
       );
     }
@@ -58,6 +64,12 @@ class LocationService {
           distanceFilter: kStationaryDistanceFilterMetres,
           intervalDuration:
               const Duration(seconds: kStationaryTimeIntervalSeconds),
+          foregroundNotificationConfig: const ForegroundNotificationConfig(
+            notificationChannelName: 'Hike Tracking',
+            notificationTitle: 'Hike',
+            notificationText: 'Recording your route',
+            enableWakeLock: true,
+          ),
         ),
       );
     }

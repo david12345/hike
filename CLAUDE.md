@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.0.21+22 |
+| Version | 1.0.22+23 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -298,6 +298,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.0.19 | High priority: AnalyticsViewModel, TrailsImportExportService, UserPreferencesService, weather/GPS lifecycle fixes, segments cache, error logging |
 | v1.0.20 | GPS drift filter, pause/resume recording, pt/en localisation, analytics charts extracted, M2–M5 refactors |
 | v1.0.21 | Bug fixes: Trails sort icon update, Log sort by startTime, Analytics blank screen (DTO isolate fix, error state, zero-bar guards) |
+| v1.0.22 | Android fixes: WAKE_LOCK permission, foregroundNotificationConfig, Auto minCarApiLevel, attachBaseContext restored, background file read, BROWSABLE intent filters |
 
 ---
 

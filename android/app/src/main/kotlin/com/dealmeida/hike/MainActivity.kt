@@ -1,11 +1,19 @@
 package com.dealmeida.hike
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
+import androidx.lifecycle.lifecycleScope
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.Locale
 
 class MainActivity : FlutterActivity() {
 
@@ -17,6 +25,14 @@ class MainActivity : FlutterActivity() {
 
     // Stores file data from a cold-start intent until Dart calls getInitialFile().
     private var pendingFile: HashMap<String, Any>? = null
+
+    override fun attachBaseContext(newBase: Context) {
+        val locale = Locale.ENGLISH
+        Locale.setDefault(locale)
+        val config = newBase.resources.configuration
+        config.setLocale(locale)
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -33,9 +49,18 @@ class MainActivity : FlutterActivity() {
 
         flutterEngine.plugins.add(AutoDataPlugin())
 
-        // Cold start: store any file carried by the launch intent.
-        // Flutter is not yet running here, so we cannot invokeMethod yet.
-        pendingFile = readFileFromIntent(intent)
+        // Cold start: read file from launch intent on an IO thread so the
+        // main thread is not blocked by file I/O.
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val fileData = readFileFromIntent(intent)
+                withContext(Dispatchers.Main) {
+                    pendingFile = fileData
+                }
+            } catch (e: Exception) {
+                Log.e("HikeIntent", "Failed to read intent file", e)
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -58,7 +83,8 @@ class MainActivity : FlutterActivity() {
             val bytes = stream.readBytes()
             stream.close()
             hashMapOf("bytes" to bytes, "filename" to (resolveFilename(uri) ?: "trail.gpx"))
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("HikeIntent", "Failed to read intent file", e)
             null
         }
     }
