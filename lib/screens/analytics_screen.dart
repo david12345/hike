@@ -1,258 +1,22 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/hike_record.dart';
 import '../services/analytics_service.dart';
 import '../services/hike_service.dart';
+import '../services/user_preferences_service.dart';
+import '../viewmodels/analytics_view_model.dart';
 import 'about_screen.dart';
-
-// ---------------------------------------------------------------------------
-// SharedPreferences keys
-// ---------------------------------------------------------------------------
-const _kPrefStartMs = 'analytics_start_ms';
-const _kPrefEndMs = 'analytics_end_ms';
-const _kPrefPreset = 'analytics_preset';
-
-// ---------------------------------------------------------------------------
-// Preset definitions
-// ---------------------------------------------------------------------------
-enum _Preset { days7, days30, months3, all }
-
-extension _PresetExt on _Preset {
-  String get label {
-    switch (this) {
-      case _Preset.days7:
-        return '7 d';
-      case _Preset.days30:
-        return '30 d';
-      case _Preset.months3:
-        return '3 mo';
-      case _Preset.all:
-        return 'All';
-    }
-  }
-
-  String get prefsKey {
-    switch (this) {
-      case _Preset.days7:
-        return '7d';
-      case _Preset.days30:
-        return '30d';
-      case _Preset.months3:
-        return '3mo';
-      case _Preset.all:
-        return 'all';
-    }
-  }
-
-  static _Preset? fromKey(String? key) {
-    for (final p in _Preset.values) {
-      if (p.prefsKey == key) return p;
-    }
-    return null;
-  }
-
-  /// Returns the [DateTimeRange] for this preset relative to [now].
-  /// Returns null for [_Preset.all].
-  DateTimeRange? toRange(DateTime now) {
-    final today = DateTime(now.year, now.month, now.day, 23, 59, 59);
-    switch (this) {
-      case _Preset.days7:
-        return DateTimeRange(
-          start: today.subtract(const Duration(days: 6)),
-          end: today,
-        );
-      case _Preset.days30:
-        return DateTimeRange(
-          start: today.subtract(const Duration(days: 29)),
-          end: today,
-        );
-      case _Preset.months3:
-        return DateTimeRange(
-          start: today.subtract(const Duration(days: 89)),
-          end: today,
-        );
-      case _Preset.all:
-        return null;
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Isolate helpers (must be top-level for compute())
-// ---------------------------------------------------------------------------
-
-/// Payload passed to the background isolate.
-class _AnalyticsInput {
-  final List<HikeRecord> filtered;
-  final List<HikeRecord> allHikes;
-
-  const _AnalyticsInput({required this.filtered, required this.allHikes});
-}
-
-/// Top-level entry point required by Flutter's [compute] function.
-AnalyticsStats _runAnalytics(_AnalyticsInput input) {
-  return AnalyticsService.compute(input.filtered, input.allHikes);
-}
 
 // ---------------------------------------------------------------------------
 // Main screen
 // ---------------------------------------------------------------------------
 
-class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({super.key});
+class AnalyticsScreen extends StatelessWidget {
+  final AnalyticsViewModel viewModel;
 
-  @override
-  State<AnalyticsScreen> createState() => _AnalyticsScreenState();
-}
-
-class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  _Preset? _activePreset = _Preset.days30;
-  DateTimeRange? _customRange;
-  bool _prefsLoaded = false;
-
-  /// Monotonically increasing counter used to discard results from superseded
-  /// computations triggered while a previous isolate is still running.
-  int _computeGeneration = 0;
-
-  /// Most recently completed analytics result. Displayed while a new
-  /// computation is in progress to prevent the screen from going blank.
-  AnalyticsStats? _cachedStats;
-
-  /// The in-flight compute Future. Rebuilt whenever [HikeService.version] or
-  /// the active filter changes.
-  Future<AnalyticsStats>? _statsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    HikeService.version.addListener(_onVersionChanged);
-    _loadPrefs();
-  }
-
-  @override
-  void dispose() {
-    HikeService.version.removeListener(_onVersionChanged);
-    super.dispose();
-  }
-
-  void _onVersionChanged() {
-    _triggerRecompute();
-  }
-
-  /// Launches a background isolate computation, cancelling any in-flight result.
-  void _triggerRecompute() {
-    if (!_prefsLoaded) return;
-    final gen = ++_computeGeneration;
-    final allHikes = HikeService.getAll();
-    final filtered = _applyFilter(allHikes);
-    final future = compute(
-      _runAnalytics,
-      _AnalyticsInput(filtered: filtered, allHikes: allHikes),
-    );
-    setState(() {
-      _statsFuture = future;
-    });
-    future.then((stats) {
-      if (!mounted) return;
-      if (gen != _computeGeneration) return; // superseded
-      setState(() {
-        _cachedStats = stats;
-        _statsFuture = null;
-      });
-    }).catchError((Object e) {
-      if (!mounted) return;
-      if (gen != _computeGeneration) return;
-      debugPrint('[Analytics] isolate error: $e');
-      // Keep previous cached result; clear future so UI does not stay in
-      // loading state indefinitely.
-      setState(() {
-        _statsFuture = null;
-      });
-    });
-  }
-
-  Future<void> _loadPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final presetKey = prefs.getString(_kPrefPreset);
-    final startMs = prefs.getInt(_kPrefStartMs);
-    final endMs = prefs.getInt(_kPrefEndMs);
-
-    final preset = _PresetExt.fromKey(presetKey);
-    DateTimeRange? custom;
-    if (preset == null && startMs != null && endMs != null) {
-      custom = DateTimeRange(
-        start: DateTime.fromMillisecondsSinceEpoch(startMs),
-        end: DateTime.fromMillisecondsSinceEpoch(endMs),
-      );
-    }
-
-    if (mounted) {
-      setState(() {
-        _activePreset = preset ?? (custom != null ? null : _Preset.days30);
-        _customRange = custom;
-        _prefsLoaded = true;
-      });
-      _triggerRecompute();
-    }
-  }
-
-  Future<void> _savePrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (_activePreset != null) {
-      await prefs.setString(_kPrefPreset, _activePreset!.prefsKey);
-      await prefs.remove(_kPrefStartMs);
-      await prefs.remove(_kPrefEndMs);
-    } else if (_customRange != null) {
-      await prefs.remove(_kPrefPreset);
-      await prefs.setInt(
-          _kPrefStartMs, _customRange!.start.millisecondsSinceEpoch);
-      await prefs.setInt(
-          _kPrefEndMs, _customRange!.end.millisecondsSinceEpoch);
-    }
-  }
-
-  void _applyPreset(_Preset preset) {
-    setState(() {
-      _activePreset = preset;
-      _customRange = null;
-    });
-    _savePrefs();
-    _triggerRecompute();
-  }
-
-  void _applyCustomRange(DateTimeRange range) {
-    setState(() {
-      _activePreset = null;
-      _customRange = range;
-    });
-    _savePrefs();
-    _triggerRecompute();
-  }
-
-  /// Returns the effective date range (null means "all time").
-  DateTimeRange? get _effectiveRange {
-    if (_activePreset != null) {
-      return _activePreset!.toRange(DateTime.now());
-    }
-    return _customRange;
-  }
-
-  List<HikeRecord> _applyFilter(List<HikeRecord> all) {
-    final range = _effectiveRange;
-    if (range == null) return all;
-    final start =
-        DateTime(range.start.year, range.start.month, range.start.day);
-    final end = DateTime(
-        range.end.year, range.end.month, range.end.day, 23, 59, 59);
-    return all
-        .where((h) =>
-            !h.startTime.isBefore(start) && !h.startTime.isAfter(end))
-        .toList();
-  }
+  const AnalyticsScreen({super.key, required this.viewModel});
 
   void _openAbout(BuildContext context) {
     Navigator.push(
@@ -265,86 +29,86 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine whether a background computation is currently running.
-    final bool isComputing = _statsFuture != null;
-    // Use the most recently completed result, or empty while loading the first.
-    final stats = _cachedStats ?? AnalyticsStats.empty;
-    // Snapshot the filter state for the empty-state check below.
-    final allHikes = HikeService.getAll();
-    final filtered = _applyFilter(allHikes);
+    return ListenableBuilder(
+      listenable: viewModel,
+      builder: (context, _) {
+        final isLoading = viewModel.isLoading;
+        final stats = viewModel.cachedStats ?? AnalyticsStats.empty;
+        final allHikes = HikeService.getAll();
+        final filtered = viewModel.applyFilter(allHikes);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Stats'),
-        centerTitle: true,
-        actions: [
-          // Show a small loading indicator in the AppBar while computing.
-          if (isComputing)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'about') _openAbout(context);
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'about', child: Text('About')),
-            ],
-          ),
-        ],
-      ),
-      body: !_prefsLoaded
-          ? const Center(child: CircularProgressIndicator())
-          : _cachedStats == null && isComputing
-              // First-load: no cached result yet — show a spinner.
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _DateRangeFilterCard(
-                        activePreset: _activePreset,
-                        customRange: _customRange,
-                        onPreset: _applyPreset,
-                        onCustomRange: _applyCustomRange,
-                      ),
-                      const SizedBox(height: 16),
-                      if (filtered.isEmpty)
-                        _EmptyState(hasAnyHikes: allHikes.isNotEmpty)
-                      else ...[
-                        const _SectionHeader('Summary'),
-                        const SizedBox(height: 8),
-                        _MetricsGrid(stats: stats),
-                        const SizedBox(height: 16),
-                        const _SectionHeader('Personal Bests'),
-                        const SizedBox(height: 8),
-                        _PersonalBestsGrid(stats: stats),
-                        const SizedBox(height: 16),
-                        const _SectionHeader('Streaks'),
-                        const SizedBox(height: 8),
-                        _StreaksRow(stats: stats),
-                        const SizedBox(height: 16),
-                        const _SectionHeader('Distance by Month'),
-                        const SizedBox(height: 8),
-                        _MonthlyDistanceChart(data: stats.monthlyDistance),
-                        const SizedBox(height: 16),
-                        const _SectionHeader('Activity by Day of Week'),
-                        const SizedBox(height: 8),
-                        _DayOfWeekChart(counts: stats.dayOfWeekCounts),
-                        const SizedBox(height: 16),
-                        const _SectionHeader('Distance Distribution'),
-                        const SizedBox(height: 8),
-                        _DistributionChart(buckets: stats.distanceBuckets),
-                      ],
-                    ],
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Stats'),
+            centerTitle: true,
+            actions: [
+              if (isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'about') _openAbout(context);
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'about', child: Text('About')),
+                ],
+              ),
+            ],
+          ),
+          body: !viewModel.prefsLoaded
+              ? const Center(child: CircularProgressIndicator())
+              : viewModel.cachedStats == null && isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _DateRangeFilterCard(
+                            activePreset: viewModel.activePreset,
+                            customRange: viewModel.customRange,
+                            onPreset: viewModel.setPreset,
+                            onCustomRange: viewModel.setCustomRange,
+                          ),
+                          const SizedBox(height: 16),
+                          if (filtered.isEmpty)
+                            _EmptyState(hasAnyHikes: allHikes.isNotEmpty)
+                          else ...[
+                            const _SectionHeader('Summary'),
+                            const SizedBox(height: 8),
+                            _MetricsGrid(stats: stats),
+                            const SizedBox(height: 16),
+                            const _SectionHeader('Personal Bests'),
+                            const SizedBox(height: 8),
+                            _PersonalBestsGrid(stats: stats),
+                            const SizedBox(height: 16),
+                            const _SectionHeader('Streaks'),
+                            const SizedBox(height: 8),
+                            _StreaksRow(stats: stats),
+                            const SizedBox(height: 16),
+                            const _SectionHeader('Distance by Month'),
+                            const SizedBox(height: 8),
+                            _MonthlyDistanceChart(data: stats.monthlyDistance),
+                            const SizedBox(height: 16),
+                            const _SectionHeader('Activity by Day of Week'),
+                            const SizedBox(height: 8),
+                            _DayOfWeekChart(counts: stats.dayOfWeekCounts),
+                            const SizedBox(height: 16),
+                            const _SectionHeader('Distance Distribution'),
+                            const SizedBox(height: 8),
+                            _DistributionChart(buckets: stats.distanceBuckets),
+                          ],
+                        ],
+                      ),
+                    ),
+        );
+      },
     );
   }
 }
@@ -354,9 +118,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 // ---------------------------------------------------------------------------
 
 class _DateRangeFilterCard extends StatelessWidget {
-  final _Preset? activePreset;
+  final AnalyticsFilterPreset? activePreset;
   final DateTimeRange? customRange;
-  final ValueChanged<_Preset> onPreset;
+  final ValueChanged<AnalyticsFilterPreset> onPreset;
   final ValueChanged<DateTimeRange> onCustomRange;
 
   const _DateRangeFilterCard({
@@ -445,7 +209,7 @@ class _DateRangeFilterCard extends StatelessWidget {
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
-              children: _Preset.values.map((p) {
+              children: AnalyticsFilterPreset.values.map((p) {
                 final selected = activePreset == p;
                 return ChoiceChip(
                   label: Text(p.label),
@@ -783,7 +547,6 @@ Widget _noDataPlaceholder(String message) {
   );
 }
 
-/// Returns a "nice" round interval for chart axes.
 double _niceInterval(double maxValue) {
   if (maxValue <= 0) return 1;
   final raw = maxValue / 5;
@@ -896,7 +659,6 @@ class _MonthlyDistanceChart extends StatelessWidget {
       );
     }
 
-    // Horizontally scrollable for > 12 months.
     const barWidth = 30.0;
     final chartWidth = data.length * barWidth + 60;
     return Card(
@@ -917,7 +679,7 @@ class _MonthlyDistanceChart extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _DayOfWeekChart extends StatelessWidget {
-  final List<int> counts; // 7 elements, index 0=Mon
+  final List<int> counts;
 
   const _DayOfWeekChart({required this.counts});
 
@@ -1012,7 +774,7 @@ class _DayOfWeekChart extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _DistributionChart extends StatelessWidget {
-  final List<int> buckets; // 5 elements
+  final List<int> buckets;
 
   const _DistributionChart({required this.buckets});
 

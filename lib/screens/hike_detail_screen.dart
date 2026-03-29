@@ -34,6 +34,10 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
   /// Real (non-NaN) route points used for bounds and markers.
   late final List<LatLng> _realPoints;
 
+  /// Cached polyline segments split at NaN gap markers.
+  /// Computed once in [initState]; [_route] is immutable after that.
+  late final List<List<LatLng>> _segments;
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +64,7 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
     _bounds = _hasMeaningfulBounds(_realPoints)
         ? boundsForPoints(_realPoints)
         : null;
+    _segments = segmentsFromPoints(_route);
   }
 
   @override
@@ -86,7 +91,6 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final route = _route;
     final hasRoute = _realPoints.length > 1;
     final meaningfulBounds = _bounds != null;
     final pointCount = widget.hike.latitudes
@@ -127,7 +131,7 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
                         ),
                       ),
                       PolylineLayer(
-                        polylines: segmentsFromPoints(route)
+                        polylines: _segments
                             .map(
                               (seg) => Polyline(
                                 points: seg,

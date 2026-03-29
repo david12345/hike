@@ -1,56 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/hike_record.dart';
 import '../services/hike_service.dart';
 import '../services/imported_trail_service.dart';
+import '../services/user_preferences_service.dart';
 import 'hike_detail_screen.dart';
 
 /// Date format for hike start times displayed in the log list.
 final _hikeDateFormat = DateFormat('MMM d, y \u2022 HH:mm');
 
-class LogScreen extends StatefulWidget {
+class LogScreen extends StatelessWidget {
   const LogScreen({super.key});
 
   @override
-  State<LogScreen> createState() => _LogScreenState();
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: UserPreferencesService.instance,
+      builder: (context, _) {
+        return ListenableBuilder(
+          listenable: HikeService.version,
+          builder: (context, _) {
+            final prefs = UserPreferencesService.instance;
+            final sortDescending =
+                prefs.logSortOrder == LogSortOrder.descending;
+            final hikes = HikeService.getAll();
+            final sorted = sortDescending ? hikes : hikes.reversed.toList();
+
+            return _LogScaffold(
+              hikes: sorted,
+              sortDescending: sortDescending,
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
-class _LogScreenState extends State<LogScreen> {
-  bool _sortDescending = true;
+class _LogScaffold extends StatelessWidget {
+  final List<HikeRecord> hikes;
+  final bool sortDescending;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSortPreference();
-  }
+  const _LogScaffold({required this.hikes, required this.sortDescending});
 
-  Future<void> _loadSortPreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _sortDescending = prefs.getBool('log_sort_descending') ?? true;
-    });
-  }
+  AppBar _buildAppBar(BuildContext context, int hikeCount) => AppBar(
+        title: Text(hikeCount == 0 ? 'Hike Log' : 'Hike Log ($hikeCount)'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(
+                sortDescending ? Icons.arrow_downward : Icons.arrow_upward),
+            tooltip: sortDescending ? 'Oldest first' : 'Newest first',
+            onPressed: UserPreferencesService.instance.toggleLogSortOrder,
+          ),
+        ],
+      );
 
-  Future<void> _toggleSort() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() => _sortDescending = !_sortDescending);
-    await prefs.setBool('log_sort_descending', _sortDescending);
-  }
-
-  AppBar _buildAppBar(int hikeCount) => AppBar(
-    title: Text(hikeCount == 0 ? 'Hike Log' : 'Hike Log ($hikeCount)'),
-    centerTitle: true,
-    actions: [
-      IconButton(
-        icon: Icon(_sortDescending ? Icons.arrow_downward : Icons.arrow_upward),
-        tooltip: _sortDescending ? 'Oldest first' : 'Newest first',
-        onPressed: _toggleSort,
-      ),
-    ],
-  );
-
-  Future<void> _saveToTrails(HikeRecord hike) async {
+  Future<void> _saveToTrails(BuildContext context, HikeRecord hike) async {
     final controller = TextEditingController(text: hike.name);
     final name = await showDialog<String>(
       context: context,
@@ -76,25 +82,27 @@ class _LogScreenState extends State<LogScreen> {
       ),
     );
     controller.dispose();
-    if (!mounted) return;
+    if (!context.mounted) return;
     if (name == null || name.isEmpty) return;
     final trail =
         ImportedTrailService.fromHikeRecord(hike, nameOverride: name);
     await ImportedTrailService.save(trail);
-    if (!mounted) return;
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Saved to Trails as '$name'")),
     );
   }
 
-  Future<void> _delete(HikeRecord hike) async {
+  Future<void> _delete(BuildContext context, HikeRecord hike) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Delete Hike?'),
         content: Text('Delete "${hike.name}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -109,94 +117,89 @@ class _LogScreenState extends State<LogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: HikeService.version,
-      builder: (context, _) {
-        final hikes = HikeService.getAll(); // always newest-first from service
-        final sorted = _sortDescending
-            ? hikes
-            : hikes.reversed.toList();
-        if (sorted.isEmpty) {
-          return Scaffold(
-            appBar: _buildAppBar(0),
-            body: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+    if (hikes.isEmpty) {
+      return Scaffold(
+        appBar: _buildAppBar(context, 0),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.hiking, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text('No hikes yet',
+                  style: TextStyle(color: Colors.grey, fontSize: 18)),
+              SizedBox(height: 8),
+              Text('Start tracking your first hike!',
+                  style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: _buildAppBar(context, hikes.length),
+      body: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: hikes.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, i) {
+          final hike = hikes[i];
+          return Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.terrain)),
+              title: Text(hike.name),
+              subtitle: Text(
+                _hikeDateFormat.format(hike.startTime),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.hiking, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('No hikes yet', style: TextStyle(color: Colors.grey, fontSize: 18)),
-                  SizedBox(height: 8),
-                  Text('Start tracking your first hike!', style: TextStyle(color: Colors.grey)),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(hike.distanceFormatted,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(hike.durationFormatted,
+                          style: const TextStyle(
+                              color: Colors.grey, fontSize: 12)),
+                      if (hike.steps > 0) ...[
+                        Text(
+                          hike.stepsFormatted,
+                          style: const TextStyle(
+                              color: Colors.grey, fontSize: 11),
+                        ),
+                        Text(
+                          hike.caloriesFormatted,
+                          style: const TextStyle(
+                              color: Colors.grey, fontSize: 11),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (hike.latitudes.length >= 2)
+                    IconButton(
+                      icon: const Icon(Icons.bookmark_add_outlined,
+                          color: Colors.deepOrange),
+                      tooltip: 'Save to Trails',
+                      onPressed: () => _saveToTrails(context, hike),
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: () => _delete(context, hike),
+                  ),
                 ],
+              ),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => HikeDetailScreen(hike: hike)),
               ),
             ),
           );
-        }
-
-        return Scaffold(
-          appBar: _buildAppBar(sorted.length),
-          body: ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: sorted.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 8),
-            itemBuilder: (context, i) {
-              final hike = sorted[i];
-              return Card(
-                child: ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.terrain)),
-                  title: Text(hike.name),
-                  subtitle: Text(
-                    _hikeDateFormat.format(hike.startTime),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(hike.distanceFormatted,
-                              style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(hike.durationFormatted,
-                              style: const TextStyle(
-                                  color: Colors.grey, fontSize: 12)),
-                          if (hike.steps > 0) ...[
-                            Text(
-                              hike.stepsFormatted,
-                              style: const TextStyle(color: Colors.grey, fontSize: 11),
-                            ),
-                            Text(
-                              hike.caloriesFormatted,
-                              style: const TextStyle(color: Colors.grey, fontSize: 11),
-                            ),
-                          ],
-                        ],
-                      ),
-                      if (hike.latitudes.length >= 2)
-                        IconButton(
-                          icon: const Icon(Icons.bookmark_add_outlined,
-                              color: Colors.deepOrange),
-                          tooltip: 'Save to Trails',
-                          onPressed: () => _saveToTrails(hike),
-                        ),
-                      IconButton(
-                        icon:
-                            const Icon(Icons.delete_outline, color: Colors.red),
-                        onPressed: () => _delete(hike),
-                      ),
-                    ],
-                  ),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => HikeDetailScreen(hike: hike)),
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 }

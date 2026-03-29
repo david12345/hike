@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -57,7 +57,7 @@ class StepData {
 /// Instantiated once in `_HomePageState.initState()` and disposed in
 /// `_HomePageState.dispose()`. Passed to [TrackScreen] as a constructor
 /// parameter.
-class HikeRecordingController extends ChangeNotifier {
+class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver {
   // ---------------------------------------------------------------------------
   // Observable state
   // ---------------------------------------------------------------------------
@@ -153,6 +153,9 @@ class HikeRecordingController extends ChangeNotifier {
   bool _weatherFetchInProgress = false;
   DateTime? _lastWeatherTimerFire;
 
+  // App lifecycle state — used to skip weather fetches when backgrounded.
+  AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
+
   // Checkpoint save state
   Timer? _checkpointTimer;
   int _pointsSinceCheckpoint = 0;
@@ -167,6 +170,7 @@ class HikeRecordingController extends ChangeNotifier {
   ///
   /// Called once from `TrackScreen.initState()`.
   Future<void> init() async {
+    WidgetsBinding.instance.addObserver(this);
     _initCompass();
     await _initPedometer();
     _recordingPointSub = TrackingState.instance.recordingPoints.listen(
@@ -177,10 +181,36 @@ class HikeRecordingController extends ChangeNotifier {
     _weatherTimer = Timer.periodic(
       const Duration(minutes: 5),
       (_) {
+        if (_lifecycleState == AppLifecycleState.paused ||
+            _lifecycleState == AppLifecycleState.hidden ||
+            _lifecycleState == AppLifecycleState.inactive) {
+          debugPrint(
+              '[WeatherPoller] skipping fetch — app is backgrounded');
+          return;
+        }
         _lastWeatherTimerFire = DateTime.now();
         _fetchWeather();
       },
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // App lifecycle observer (H3)
+  // ---------------------------------------------------------------------------
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _lifecycleState = state;
+    if (state == AppLifecycleState.resumed) {
+      // Trigger an immediate weather fetch if the last one was > 5 minutes ago.
+      final timeSince = _lastWeatherTimerFire == null
+          ? const Duration(days: 1)
+          : DateTime.now().difference(_lastWeatherTimerFire!);
+      if (timeSince > const Duration(minutes: 5)) {
+        _lastWeatherTimerFire = DateTime.now();
+        unawaited(_fetchWeather());
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -246,14 +276,20 @@ class HikeRecordingController extends ChangeNotifier {
     try {
       final sub = PedometerService.stepCountStream.listen(
         (_) {},
-        onError: (_) {
+        onError: (Object e) {
+          debugPrint('[PedometerProbe] onError during probe: $e');
           _pedometerAvailable = false;
           notifyListeners();
         },
       );
       await Future<void>.delayed(const Duration(milliseconds: 500));
       await sub.cancel();
-    } catch (_) {
+    } catch (e) {
+      // CAUTION: this result is persisted to SharedPreferences below.
+      // A transient platform error here permanently disables step counting
+      // for the lifetime of the install until prefs are cleared.
+      debugPrint('[PedometerProbe] probe failed: $e — '
+          'step counting will be disabled for this install');
       _pedometerAvailable = false;
       notifyListeners();
     }
@@ -359,7 +395,8 @@ class HikeRecordingController extends ChangeNotifier {
             calories: _hikeSteps * kCaloriesPerStep,
           );
         },
-        onError: (_) {
+        onError: (Object e) {
+          debugPrint('[HikeRecordingController] pedometer error during recording: $e');
           _pedometerAvailable = false;
           notifyListeners();
         },
@@ -444,8 +481,9 @@ class HikeRecordingController extends ChangeNotifier {
 
     try {
       await ForegroundTrackingService.stop();
-    } catch (_) {
+    } catch (e) {
       // Non-critical — service may already be stopped.
+      debugPrint('[HikeRecordingController] foreground service stop failed: $e');
     }
 
     if (_inFlight != null) {
@@ -538,7 +576,8 @@ class HikeRecordingController extends ChangeNotifier {
             calories: _hikeSteps * kCaloriesPerStep,
           );
         },
-        onError: (_) {
+        onError: (Object e) {
+          debugPrint('[HikeRecordingController] pedometer error during resume: $e');
           _pedometerAvailable = false;
           notifyListeners();
         },
@@ -587,6 +626,7 @@ class HikeRecordingController extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     TrackingState.instance.removeListener(_onTrackingChanged);
     _recordingPointSub?.cancel();
     _compassSub?.cancel();

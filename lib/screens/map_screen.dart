@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../services/tile_cache_service.dart';
 import '../services/tile_preference_service.dart';
 import '../services/tracking_state.dart';
@@ -28,6 +29,10 @@ class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
   bool _followLocation = true;
 
+  /// Cached polyline segments — recomputed in [_onTrackingChanged] on every
+  /// GPS event instead of inside [build] / [ListenableBuilder].
+  List<List<LatLng>> _segments = [];
+
   @override
   void initState() {
     super.initState();
@@ -36,14 +41,19 @@ class _MapScreenState extends State<MapScreen> {
 
   /// Called when [TrackingState] fires [notifyListeners] — on every GPS event.
   ///
-  /// Only pans the map camera; does NOT call [setState]. The [MarkerLayer] and
-  /// [PolylineLayer] rebuild via their own [ListenableBuilder] wrappers.
+  /// Pans the map camera and recomputes [_segments]. Does NOT call [setState]
+  /// for camera moves. The [MarkerLayer] and [PolylineLayer] rebuild via their
+  /// own [ListenableBuilder] wrappers which read [_segments] directly.
   void _onTrackingChanged() {
     if (!mounted) return;
-    final pos = TrackingState.instance.ambientPosition;
+    final tracking = TrackingState.instance;
+    final pos = tracking.ambientPosition;
     if (_followLocation && pos != null) {
       _mapController.move(pos, _mapController.camera.zoom);
     }
+    // Recompute segments outside of build() so the ListenableBuilder only
+    // reads the already-computed list.
+    _segments = segmentsFromPoints(tracking.points);
   }
 
   @override
@@ -106,7 +116,7 @@ class _MapScreenState extends State<MapScreen> {
                       if (tracking.isRecording &&
                           tracking.points.length > 1)
                         PolylineLayer(
-                          polylines: segmentsFromPoints(tracking.points)
+                          polylines: _segments
                               .map(
                                 (seg) => Polyline(
                                   points: seg,

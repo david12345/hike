@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -46,7 +46,7 @@ class _BufferedFix {
 ///
 /// No other class should call [LocationService.trackPosition] or
 /// [LocationService.trackPositionAmbient] directly.
-class TrackingState extends ChangeNotifier {
+class TrackingState extends ChangeNotifier with WidgetsBindingObserver {
   TrackingState._();
 
   /// The single shared instance.
@@ -170,6 +170,7 @@ class TrackingState extends ChangeNotifier {
   /// Call once from [SplashScreen.initState].
   static Future<void> init() async {
     instance._permissionGranted = await LocationService.requestPermission();
+    WidgetsBinding.instance.addObserver(instance);
     if (instance._permissionGranted) {
       instance._startAmbientStream();
     }
@@ -260,9 +261,39 @@ class TrackingState extends ChangeNotifier {
   /// Called from [_HomePageState.dispose] on app exit to release the
   /// platform GPS stream cleanly.
   void cancelStream() {
+    WidgetsBinding.instance.removeObserver(this);
     _streamSub?.cancel();
     _streamSub = null;
     _recordingPointController.close();
+  }
+
+  // ---------------------------------------------------------------------------
+  // App lifecycle observer (H4)
+  // ---------------------------------------------------------------------------
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      if (!_isRecording) {
+        _pauseAmbient();
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      if (!_isRecording && _streamSub == null && _permissionGranted) {
+        _resumeAmbient();
+      }
+    }
+  }
+
+  void _pauseAmbient() {
+    debugPrint('[TrackingState] ambient GPS paused (app backgrounded)');
+    _streamSub?.cancel();
+    _streamSub = null;
+  }
+
+  void _resumeAmbient() {
+    debugPrint('[TrackingState] ambient GPS resumed (app foregrounded)');
+    _startAmbientStream();
   }
 
   // ---------------------------------------------------------------------------

@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.0.18+19 |
+| Version | 1.0.19+20 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -53,18 +53,22 @@ lib/
 │   └── about_screen.dart           # App info (black bg, centered). Accessible via Analytics AppBar overflow menu.
 ├── services/
 │   ├── hike_service.dart           # Hive CRUD for HikeRecord + version ValueNotifier + findUnfinished()
-│   ├── hike_recording_controller.dart # ChangeNotifier: GPS recording lifecycle, checkpoint saves, error handling
+│   ├── hike_recording_controller.dart # ChangeNotifier: GPS recording lifecycle, checkpoint saves, error handling; WidgetsBindingObserver skips weather when backgrounded
 │   ├── location_service.dart       # Geolocator wrapper; trackPosition() (high) + trackPositionAmbient() (medium)
-│   ├── tracking_state.dart         # Singleton ChangeNotifier: sole GPS stream owner, ambient/recording modes
+│   ├── tracking_state.dart         # Singleton ChangeNotifier: sole GPS stream owner, ambient/recording modes; WidgetsBindingObserver pauses ambient GPS when backgrounded
 │   ├── weather_service.dart        # Open-Meteo API client — temperature, weather code, air pressure
 │   ├── compass_service.dart        # flutter_compass wrapper with headingToCardinal()
 │   ├── tile_preference_service.dart # ChangeNotifier singleton: OSM ↔ OpenTopoMap preference + SharedPreferences
 │   ├── tile_cache_service.dart     # Shared flutter_map_cache DbCacheStore (30-day disk cache)
 │   ├── imported_trail_service.dart # Thin facade over parsers/exporter/repository; version ValueNotifier
+│   ├── trails_import_export_service.dart # Platform I/O for trail import/export; sealed result types
+│   ├── user_preferences_service.dart # ChangeNotifier singleton: all SharedPreferences (log/trails sort, analytics filter)
 │   ├── gpx_exporter.dart           # GPX serialisation + file I/O + ZIP bundling
 │   ├── foreground_tracking_service.dart # Android foreground service for background GPS; wake lock enabled
 │   ├── intent_handler_service.dart # Android file-open intent handler (GPX/KML/XML)
 │   └── analytics_service.dart      # Pure-Dart: AnalyticsService.compute(), AnalyticsStats, MonthlyBucket, streak helpers
+├── viewmodels/
+│   └── analytics_view_model.dart   # ChangeNotifier ViewModel: filter state, prefs I/O, isolate compute for AnalyticsScreen
 ├── utils/
 │   ├── map_utils.dart              # boundsForPoints(List<LatLng>) → LatLngBounds
 │   └── constants.dart              # kFallbackLocation, kOsmTileUrl, kTopoTileUrl, kForegroundServiceId
@@ -136,9 +140,6 @@ The Gradle `applicationVariants.all` block renames the Android build output to `
 build/app/outputs/apk/release/hike.apk
 ```
 Note: Flutter also copies a fixed-name `app-release.apk` to `build/app/outputs/flutter-apk/` — ignore that one.
-
-### LogScreenState is public
-`LogScreenState` (not `_LogScreenState`) is intentionally public so `main.dart` can hold a `GlobalKey<LogScreenState>` and call `refresh()` when a hike is saved from the Track tab.
 
 ### Map tile provider
 Two tile layers supported, toggled via `TilePreferenceService` (persisted with SharedPreferences):
@@ -293,6 +294,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.0.16 | Analytics screen: hikes per month, distance over time, distance distribution, personal bests, streaks, date range filter |
 | v1.0.17 | GPS accuracy: speed/altitude accuracy field validation, smart stationary detection with adaptive stream switching |
 | v1.0.15 | Sort order toggle for Log (by date) and Trails (by name) screens; preference persisted via SharedPreferences |
+| v1.0.19 | High priority: AnalyticsViewModel, TrailsImportExportService, UserPreferencesService, weather/GPS lifecycle fixes, segments cache, error logging |
 
 ---
 

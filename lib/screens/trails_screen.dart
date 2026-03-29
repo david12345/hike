@@ -1,42 +1,22 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
-import 'package:archive/archive_io.dart';
 import 'package:collection/collection.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/imported_trail.dart';
 import '../models/osm_trail.dart';
 import '../services/imported_trail_service.dart';
 import '../services/tile_cache_service.dart';
 import '../services/tile_preference_service.dart';
+import '../services/trails_import_export_service.dart';
+import '../services/user_preferences_service.dart';
 import '../utils/constants.dart';
 import '../utils/map_utils.dart';
 import '../widgets/map_attribution_widget.dart';
 import 'trail_map_screen.dart';
-
-class _ParseArgs {
-  final String content;
-  final String filename;
-  const _ParseArgs(this.content, this.filename);
-}
-
-List<ImportedTrail> _parseGpxIsolate(_ParseArgs args) =>
-    ImportedTrailService.parseGpx(args.content, args.filename);
-
-List<ImportedTrail> _parseKmlIsolate(_ParseArgs args) =>
-    ImportedTrailService.parseKml(args.content, args.filename);
 
 /// Displays user-imported GPX trails from Hive.
 ///
@@ -67,30 +47,7 @@ class _TrailsScreenState extends State<TrailsScreen> {
   bool _selectionMode = false;
 
   /// IDs of currently selected imported trails.
-  /// Uses ImportedTrail.id (String), not OsmTrail.osmId.
   final Set<String> _selectedIds = {};
-
-  /// Sort order for the trail list: true = A → Z, false = Z → A.
-  bool _sortAscending = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSortPreference();
-  }
-
-  Future<void> _loadSortPreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _sortAscending = prefs.getBool('trails_sort_ascending') ?? true;
-    });
-  }
-
-  Future<void> _toggleSort() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() => _sortAscending = !_sortAscending);
-    await prefs.setBool('trails_sort_ascending', _sortAscending);
-  }
 
   // ---------------------------------------------------------------------------
   // Selection mode helpers
@@ -116,8 +73,6 @@ class _TrailsScreenState extends State<TrailsScreen> {
   }
 
   /// Toggles the selection state of a single trail.
-  ///
-  /// Automatically exits selection mode when the last trail is deselected.
   void _toggleSelection(String trailId) {
     setState(() {
       if (_selectedIds.contains(trailId)) {
@@ -150,75 +105,19 @@ class _TrailsScreenState extends State<TrailsScreen> {
   // Import
   // ---------------------------------------------------------------------------
 
-  /// Imports one or more GPX, KML, or XML files selected via the system
-  /// file picker.
-  ///
-  /// Each file is independently validated and parsed. A summary [SnackBar]
-  /// reports total trails imported, files processed, and any skipped/failed
-  /// files.
   Future<void> _importFile() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        allowMultiple: true,
-        type: FileType.any,
-      );
-      if (result == null || result.files.isEmpty) return;
+    final result =
+        await TrailsImportExportService.instance.importFile();
 
-      int totalTrailsImported = 0;
-      int filesProcessed = 0;
-      int filesSkipped = 0;
-      int filesFailed = 0;
+    if (!mounted) return;
 
-      for (final file in result.files) {
-        final extension = file.name.toLowerCase();
-
-        // Validate extension — skip unsupported files
-        if (!extension.endsWith('.gpx') &&
-            !extension.endsWith('.kml') &&
-            !extension.endsWith('.xml')) {
-          filesSkipped++;
-          continue;
-        }
-
-        try {
-          if (file.bytes == null && file.path == null) {
-            filesFailed++;
-            continue;
-          }
-
-          final String content;
-          if (file.bytes != null) {
-            content = utf8.decode(file.bytes!);
-          } else {
-            content = await File(file.path!).readAsString();
-          }
-
-          // Dispatch to the correct parser based on file extension
-          final List<ImportedTrail> parsed;
-          if (extension.endsWith('.gpx')) {
-            parsed = await compute(_parseGpxIsolate, _ParseArgs(content, file.name));
-          } else {
-            // .kml and .xml both contain KML content
-            parsed = await compute(_parseKmlIsolate, _ParseArgs(content, file.name));
-          }
-
-          for (final trail in parsed) {
-            await ImportedTrailService.save(trail);
-          }
-
-          totalTrailsImported += parsed.length;
-          filesProcessed++;
-        } on FormatException {
-          filesFailed++;
-        } catch (_) {
-          filesFailed++;
-        }
-      }
-
-      if (mounted) {
-        // Build summary message
+    switch (result) {
+      case ImportCancelled():
+        break;
+      case ImportSuccess(:final count, :final filesProcessed,
+          :final filesSkipped, :final filesFailed):
         final buf = StringBuffer(
-          'Imported $totalTrailsImported trail${totalTrailsImported == 1 ? '' : 's'}'
+          'Imported $count trail${count == 1 ? '' : 's'}'
           ' from $filesProcessed file${filesProcessed == 1 ? '' : 's'}',
         );
         if (filesSkipped > 0) {
@@ -227,17 +126,11 @@ class _TrailsScreenState extends State<TrailsScreen> {
         if (filesFailed > 0) {
           buf.write(' ($filesFailed failed to parse)');
         }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(buf.toString())),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Import failed: $e')),
-        );
-      }
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(buf.toString())));
+      case ImportFailure(:final message):
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -245,17 +138,14 @@ class _TrailsScreenState extends State<TrailsScreen> {
   // Delete
   // ---------------------------------------------------------------------------
 
-  /// Deletes an imported trail by [id] and refreshes the list.
   Future<void> _deleteImportedTrail(String id) async {
     await ImportedTrailService.delete(id);
     setState(() {
-      // Close panel if the deleted trail was selected
       if (_selectedTrailId == id) {
         _panelVisible = false;
         _selectedTrail = null;
         _selectedTrailId = null;
       }
-      // Remove from multi-select set; exit selection mode if empty
       _selectedIds.remove(id);
       if (_selectionMode && _selectedIds.isEmpty) {
         _selectionMode = false;
@@ -263,9 +153,6 @@ class _TrailsScreenState extends State<TrailsScreen> {
     });
   }
 
-  /// Shows a confirmation dialog before deleting an imported trail.
-  ///
-  /// Mirrors the Log screen's delete pattern for UX consistency.
   Future<void> _confirmDelete(String id, String name) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -279,8 +166,7 @@ class _TrailsScreenState extends State<TrailsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child:
-                const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -294,10 +180,8 @@ class _TrailsScreenState extends State<TrailsScreen> {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  /// Looks up the [ImportedTrail] object for an imported trail by its ID.
-  ///
-  /// Returns `null` if [id] is null or no matching trail is found.
-  ImportedTrail? _findImported(String? id, List<ImportedTrail> importedTrails) {
+  ImportedTrail? _findImported(
+      String? id, List<ImportedTrail> importedTrails) {
     if (id == null) return null;
     return importedTrails.firstWhereOrNull((t) => t.id == id);
   }
@@ -317,9 +201,6 @@ class _TrailsScreenState extends State<TrailsScreen> {
     }
   }
 
-  /// Returns the list of trails to export based on the current mode.
-  ///
-  /// In selection mode, returns only selected trails. Otherwise returns all.
   List<ImportedTrail> get _trailsToExport {
     final importedTrails = ImportedTrailService.getAll();
     if (_selectionMode) {
@@ -334,20 +215,18 @@ class _TrailsScreenState extends State<TrailsScreen> {
   // Export
   // ---------------------------------------------------------------------------
 
-  /// Exports trails as GPX files, sharing a single file directly or
-  /// bundling multiple files into a ZIP archive.
-  ///
-  /// In selection mode, exports only selected trails. Otherwise exports all.
   Future<void> _exportTrails() async {
-    final trailsToExport = _trailsToExport;
+    final trails = _trailsToExport;
 
-    if (trailsToExport.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(_selectionMode
-                ? 'No trails selected.'
-                : 'No trails to export.')),
-      );
+    if (trails.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(_selectionMode
+                  ? 'No trails selected.'
+                  : 'No trails to export.')),
+        );
+      }
       return;
     }
 
@@ -366,86 +245,39 @@ class _TrailsScreenState extends State<TrailsScreen> {
       ),
     ));
 
-    try {
-      final files =
-          await ImportedTrailService.exportAllAsFiles(trailsToExport);
-      if (!mounted) return;
-      Navigator.pop(context); // dismiss dialog
+    final result =
+        await TrailsImportExportService.instance.exportTrails(trails);
 
-      if (files.isEmpty) return;
+    if (!mounted) return;
+    Navigator.pop(context); // dismiss loading dialog
 
-      if (files.length == 1) {
-        await Share.shareXFiles([XFile(files.first.path)]);
-      } else {
-        // Bundle into ZIP
-        final tempDir = await getTemporaryDirectory();
-        final zipPath = '${tempDir.path}/hike_trails.zip';
-        final encoder = ZipFileEncoder();
-        encoder.create(zipPath);
-        for (final f in files) {
-          await encoder.addFile(f);
-        }
-        await encoder.close();
-        await Share.shareXFiles([XFile(zipPath)]);
-      }
-
-      // Cleanup temp dir
-      final exportDir =
-          Directory('${(await getTemporaryDirectory()).path}/gpx_export');
-      if (await exportDir.exists()) await exportDir.delete(recursive: true);
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // dismiss dialog on error
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
-        );
-      }
+    switch (result) {
+      case ExportSuccess():
+        break;
+      case ExportEmpty():
+        break;
+      case ExportFailure(:final message):
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
-  /// Saves trails to a user-chosen folder via the native folder picker.
-  ///
-  /// In selection mode, saves only selected trails. Otherwise saves all.
-  /// Shows a loading dialog during the operation and a SnackBar with the
-  /// saved file path on success, or an error message on failure.
   Future<void> _saveTrailsToDevice() async {
-    final trailsToExport = _trailsToExport;
+    final trails = _trailsToExport;
 
-    if (trailsToExport.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(_selectionMode
-                ? 'No trails selected.'
-                : 'No trails to save.')),
-      );
+    if (trails.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(_selectionMode
+                  ? 'No trails selected.'
+                  : 'No trails to save.')),
+        );
+      }
       return;
     }
 
-    // Step 1: Open folder picker
-    final directoryPath = await FilePicker.platform.getDirectoryPath();
-    if (directoryPath == null) return; // user cancelled
-
-    // Step 2: WRITE_EXTERNAL_STORAGE is only needed on Android < 10 (API 28 and below).
-    // On API 29+ scoped storage allows writing without this permission.
-    if (Platform.isAndroid) {
-      final sdkInt =
-          (await DeviceInfoPlugin().androidInfo).version.sdkInt;
-      if (sdkInt < 29) {
-        final status = await Permission.storage.request();
-        if (!status.isGranted && !status.isLimited) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text('Storage permission required to save files')),
-            );
-          }
-          return;
-        }
-      }
-    }
-
-    // Step 3: Show loading dialog
-    if (!mounted) return;
+    // Show loading dialog
     unawaited(showDialog(
       context: context,
       barrierDismissible: false,
@@ -460,24 +292,26 @@ class _TrailsScreenState extends State<TrailsScreen> {
       ),
     ));
 
-    // Step 4: Write file(s) to chosen directory
-    try {
-      final path = await ImportedTrailService.saveAllToDirectory(
-        trailsToExport,
-        directoryPath,
-      );
-      if (!mounted) return;
-      Navigator.pop(context); // dismiss dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Saved to $path')),
-      );
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // dismiss dialog on error
+    final result =
+        await TrailsImportExportService.instance.saveTrailsToDevice(trails);
+
+    if (!mounted) return;
+    Navigator.pop(context); // dismiss loading dialog
+
+    switch (result) {
+      case SaveToDeviceSuccess(:final path):
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Saved to $path')));
+      case SaveToDeviceCancelled():
+        break;
+      case SaveToDevicePermissionDenied():
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Save failed: $e')),
+          const SnackBar(
+              content: Text('Storage permission required to save files')),
         );
-      }
+      case SaveToDeviceFailure(:final message):
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -496,7 +330,10 @@ class _TrailsScreenState extends State<TrailsScreen> {
               listenable: ImportedTrailService.version,
               builder: (context, _) {
                 final importedTrails = ImportedTrailService.getAll();
-                return _buildBody(importedTrails);
+                return ListenableBuilder(
+                  listenable: UserPreferencesService.instance,
+                  builder: (context, _) => _buildBody(importedTrails),
+                );
               },
             ),
           ),
@@ -537,28 +374,27 @@ class _TrailsScreenState extends State<TrailsScreen> {
     );
   }
 
-  /// Builds the normal-mode AppBar with title, sort toggle, and export menu.
   PreferredSizeWidget _buildNormalAppBar() {
+    final sortAscending = UserPreferencesService.instance.trailsSortOrder ==
+        TrailsSortOrder.ascending;
     return AppBar(
       title: const Text('Trail Browser'),
       centerTitle: true,
       actions: [
         IconButton(
-          icon: Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward),
-          tooltip: _sortAscending ? 'Z \u2192 A' : 'A \u2192 Z',
-          onPressed: _toggleSort,
+          icon: Icon(sortAscending ? Icons.arrow_upward : Icons.arrow_downward),
+          tooltip: sortAscending ? 'Z \u2192 A' : 'A \u2192 Z',
+          onPressed: UserPreferencesService.instance.toggleTrailsSortOrder,
         ),
         _buildExportMenu(),
       ],
     );
   }
 
-  /// Builds the selection-mode AppBar with count, select-all toggle,
-  /// and close button.
   PreferredSizeWidget _buildSelectionAppBar() {
     final importedCount = ImportedTrailService.getAll().length;
-    final allSelected = _selectedIds.length == importedCount &&
-        importedCount > 0;
+    final allSelected =
+        _selectedIds.length == importedCount && importedCount > 0;
     return AppBar(
       leading: IconButton(
         icon: const Icon(Icons.close),
@@ -578,7 +414,6 @@ class _TrailsScreenState extends State<TrailsScreen> {
     );
   }
 
-  /// Builds the export [PopupMenuButton], shared by both AppBar modes.
   Widget _buildExportMenu() {
     final tooltip = _selectionMode
         ? 'Export ${_selectedIds.length} trail${_selectedIds.length == 1 ? '' : 's'}'
@@ -614,16 +449,21 @@ class _TrailsScreenState extends State<TrailsScreen> {
       );
     }
 
+    final sortAscending = UserPreferencesService.instance.trailsSortOrder ==
+        TrailsSortOrder.ascending;
+
     final sorted = List<ImportedTrail>.from(importedTrails)
       ..sort((a, b) {
         final cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        return _sortAscending ? cmp : -cmp;
+        return sortAscending ? cmp : -cmp;
       });
 
-    final trails = sorted.map((imported) => _DisplayTrail(
-      osmTrail: ImportedTrailService.toOsmTrail(imported),
-      importedTrailId: imported.id,
-    )).toList();
+    final trails = sorted
+        .map((imported) => _DisplayTrail(
+              osmTrail: ImportedTrailService.toOsmTrail(imported),
+              importedTrailId: imported.id,
+            ))
+        .toList();
 
     return ListView.separated(
       padding: const EdgeInsets.all(16),
@@ -632,11 +472,12 @@ class _TrailsScreenState extends State<TrailsScreen> {
       itemBuilder: (context, i) {
         final item = trails[i];
         final t = item.osmTrail;
-        final importedTrail = _findImported(item.importedTrailId, importedTrails);
+        final importedTrail =
+            _findImported(item.importedTrailId, importedTrails);
         final isPreviewSelected =
             _selectedTrailId == item.importedTrailId && _panelVisible;
-        final isChecked = _selectionMode &&
-            _selectedIds.contains(item.importedTrailId);
+        final isChecked =
+            _selectionMode && _selectedIds.contains(item.importedTrailId);
 
         final card = Card(
           child: InkWell(
@@ -656,7 +497,8 @@ class _TrailsScreenState extends State<TrailsScreen> {
                   _toggleSelection(item.importedTrailId!);
                 }
               } else {
-                if (_selectedTrailId == item.importedTrailId && _panelVisible) {
+                if (_selectedTrailId == item.importedTrailId &&
+                    _panelVisible) {
                   setState(() {
                     _panelVisible = false;
                     _selectedTrail = null;
@@ -726,8 +568,8 @@ class _TrailsScreenState extends State<TrailsScreen> {
                         IconButton(
                           icon: const Icon(Icons.delete_outline,
                               color: Colors.red),
-                          onPressed: () => _confirmDelete(
-                              item.importedTrailId!, t.name),
+                          onPressed: () =>
+                              _confirmDelete(item.importedTrailId!, t.name),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                         ),
@@ -762,7 +604,6 @@ class _TrailsScreenState extends State<TrailsScreen> {
                       ],
                     ),
                   ],
-                  // Import metadata rows (only for imported trails)
                   if (item.isImported && importedTrail != null) ...[
                     const SizedBox(height: 4),
                     Row(
@@ -790,7 +631,6 @@ class _TrailsScreenState extends State<TrailsScreen> {
           ),
         );
 
-        // Wrap with selected indicator (preview highlight in normal mode)
         final wrappedCard = (!_selectionMode && isPreviewSelected)
             ? Container(
                 decoration: const BoxDecoration(
@@ -870,7 +710,6 @@ class _TrailPreviewPanelState extends State<_TrailPreviewPanel> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Panel header
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -905,7 +744,6 @@ class _TrailPreviewPanelState extends State<_TrailPreviewPanel> {
             ],
           ),
         ),
-        // Map
         Expanded(
           child: Stack(
             children: [
@@ -962,7 +800,6 @@ class _TrailPreviewPanelState extends State<_TrailPreviewPanel> {
             ],
           ),
         ),
-        // Stats bar
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -979,8 +816,6 @@ class _TrailPreviewPanelState extends State<_TrailPreviewPanel> {
 }
 
 /// Internal wrapper pairing an [OsmTrail] with an optional imported trail ID.
-///
-/// When [importedTrailId] is non-null, the trail is user-imported.
 class _DisplayTrail {
   final OsmTrail osmTrail;
   final String? importedTrailId;

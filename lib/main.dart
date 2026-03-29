@@ -17,6 +17,7 @@ import 'services/hike_recording_controller.dart';
 import 'services/intent_handler_service.dart';
 import 'services/tile_preference_service.dart';
 import 'services/tracking_state.dart';
+import 'viewmodels/analytics_view_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,6 +75,7 @@ class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
   late final List<Widget> _screens;
   late final HikeRecordingController _recordingController;
+  late final AnalyticsViewModel _analyticsViewModel;
   late final AppLifecycleListener _lifecycleListener;
   final ValueNotifier<OsmTrail?> _pendingGuideTrail = ValueNotifier(null);
 
@@ -92,6 +94,8 @@ class _HomePageState extends State<HomePage> {
 
     _recordingController = HikeRecordingController();
     _recordingController.init();
+    _analyticsViewModel = AnalyticsViewModel();
+    _analyticsViewModel.init();
     AutoDataBridgeService.instance.init(_recordingController);
     _pendingGuideTrail.addListener(_onPendingGuideTrail);
 
@@ -128,7 +132,7 @@ class _HomePageState extends State<HomePage> {
       const MapScreen(),
       const LogScreen(),
       TrailsScreen(onStartHike: _pendingGuideTrail),
-      const AnalyticsScreen(),
+      AnalyticsScreen(viewModel: _analyticsViewModel),
     ];
   }
 
@@ -165,6 +169,7 @@ class _HomePageState extends State<HomePage> {
     _lifecycleListener.dispose();
     AutoDataBridgeService.instance.dispose(_recordingController);
     _recordingController.dispose();
+    _analyticsViewModel.dispose();
     TrackingState.instance.cancelStream();
     super.dispose();
   }

@@ -10,6 +10,7 @@ import '../services/app_info_service.dart';
 import '../services/hike_service.dart';
 import '../services/tile_cache_service.dart';
 import '../services/tracking_state.dart';
+import '../services/user_preferences_service.dart';
 import '../widgets/about_content.dart';
 
 /// Splash screen shown on app launch before the main [HomePage].
@@ -45,6 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
       TrackingState.init(),
       TileCacheService.init(),
       AppInfoService.instance.init(),
+      UserPreferencesService.instance.init(),
       Future.delayed(const Duration(seconds: 2)),
     ]);
 
