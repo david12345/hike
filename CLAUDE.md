@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.0.19+20 |
+| Version | 1.0.20+21 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -296,6 +296,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.0.17 | GPS accuracy: speed/altitude accuracy field validation, smart stationary detection with adaptive stream switching |
 | v1.0.15 | Sort order toggle for Log (by date) and Trails (by name) screens; preference persisted via SharedPreferences |
 | v1.0.19 | High priority: AnalyticsViewModel, TrailsImportExportService, UserPreferencesService, weather/GPS lifecycle fixes, segments cache, error logging |
+| v1.0.20 | GPS drift filter, pause/resume recording, pt/en localisation, analytics charts extracted, M2–M5 refactors |
 
 ---
 
