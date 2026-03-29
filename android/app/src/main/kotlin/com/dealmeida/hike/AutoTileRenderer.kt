@@ -131,8 +131,8 @@ class AutoTileRenderer(@Suppress("UnusedPrivateMember") private val carContext: 
         val surface = container.surface ?: return
         val canvas: Canvas = try {
             surface.lockHardwareCanvas()
-        } catch (e: Exception) {
-            return
+        } catch (e: IllegalStateException) {
+            surface.lockCanvas(null)
         }
         try {
             // Background fill in case some tiles are missing.

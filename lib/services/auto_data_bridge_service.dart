@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'hike_recording_controller.dart';
@@ -70,8 +71,8 @@ class AutoDataBridgeService {
         'heading': hikeController.headingNotifier.value ?? -1.0,
         'hasPosition': pos != null,
       });
-    } catch (_) {
-      // Android Auto not connected — ignore silently.
+    } catch (e) {
+      debugPrint('[AutoDataBridgeService] channel error: $e');
     }
   }
 }

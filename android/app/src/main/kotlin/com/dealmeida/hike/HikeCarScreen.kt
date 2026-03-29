@@ -108,7 +108,7 @@ class HikeCarScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
         renderer.onSurfaceDestroyed()
-        currentInstance = null
+        if (currentInstance === this) currentInstance = null
     }
 
     override fun onVisibleAreaChanged(visibleArea: Rect) {
