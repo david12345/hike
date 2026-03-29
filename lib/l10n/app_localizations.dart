@@ -644,6 +644,12 @@ abstract class AppLocalizations {
   /// **'No data for this period'**
   String get statsNoData;
 
+  /// No description provided for @statsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get statsRetry;
+
   /// No description provided for @statsDistributionAxisLabel.
   ///
   /// In en, this message translates to:

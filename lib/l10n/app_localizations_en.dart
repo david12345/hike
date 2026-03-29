@@ -302,6 +302,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statsNoData => 'No data for this period';
 
   @override
+  String get statsRetry => 'Retry';
+
+  @override
   String get statsDistributionAxisLabel => 'km per hike';
 
   @override

@@ -17,7 +17,7 @@ class HikeService {
   static Box<HikeRecord> get _box => Hive.box<HikeRecord>(_boxName);
 
   static List<HikeRecord> getAll() {
-    return _box.values.toList().reversed.toList();
+    return _box.values.toList(); // no reversal; callers sort explicitly
   }
 
   static Future<void> save(HikeRecord record) async {

@@ -149,6 +149,13 @@ class AnalyticsViewModel extends ChangeNotifier {
 
   void _onVersionChanged() => _triggerRecompute();
 
+  /// Clears the current error state and retries the computation.
+  void refresh() {
+    _errorMessage = null;
+    notifyListeners();
+    _triggerRecompute();
+  }
+
   /// Launches a background isolate computation, discarding any in-flight result
   /// that was superseded by a newer filter or hike-list change.
   void _triggerRecompute() {
@@ -161,9 +168,16 @@ class AnalyticsViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    // Detach records from their Hive box before sending to the isolate.
+    // HikeRecord extends HiveObject which holds an internal box reference that
+    // cannot be sent across isolate message channels. Constructing fresh copies
+    // with only the primitive fields used by AnalyticsService is safe.
+    final detachedFiltered = filtered.map(_detach).toList();
+    final detachedAll = allHikes.map(_detach).toList();
+
     compute(
       runAnalytics,
-      AnalyticsInput(filtered: filtered, allHikes: allHikes),
+      AnalyticsInput(filtered: detachedFiltered, allHikes: detachedAll),
     ).then((stats) {
       if (gen != _computeGeneration) return; // superseded
       _cachedStats = stats;
@@ -178,4 +192,17 @@ class AnalyticsViewModel extends ChangeNotifier {
       notifyListeners();
     });
   }
+
+  /// Returns a plain detached copy of [r] with no Hive box reference.
+  static HikeRecord _detach(HikeRecord r) => HikeRecord(
+        id: r.id,
+        name: r.name,
+        startTime: r.startTime,
+        endTime: r.endTime,
+        distanceMeters: r.distanceMeters,
+        latitudes: List<double>.from(r.latitudes),
+        longitudes: List<double>.from(r.longitudes),
+        steps: r.steps,
+        calories: r.calories,
+      );
 }

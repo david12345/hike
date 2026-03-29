@@ -302,6 +302,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get statsNoData => 'Sem dados para este período';
 
   @override
+  String get statsRetry => 'Tentar novamente';
+
+  @override
   String get statsDistributionAxisLabel => 'km por caminhada';
 
   @override

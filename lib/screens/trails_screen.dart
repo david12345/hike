@@ -326,56 +326,56 @@ class _TrailsScreenState extends State<TrailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _selectionMode ? _buildSelectionAppBar() : _buildNormalAppBar(),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListenableBuilder(
-              listenable: ImportedTrailService.version,
-              builder: (context, _) {
-                final importedTrails = ImportedTrailService.getAll();
-                return ListenableBuilder(
-                  listenable: UserPreferencesService.instance,
-                  builder: (context, _) => _buildBody(importedTrails),
-                );
-              },
-            ),
+    return ListenableBuilder(
+      listenable: UserPreferencesService.instance,
+      builder: (context, _) {
+        return Scaffold(
+          appBar: _selectionMode ? _buildSelectionAppBar() : _buildNormalAppBar(),
+          body: Column(
+            children: [
+              Expanded(
+                child: ListenableBuilder(
+                  listenable: ImportedTrailService.version,
+                  builder: (context, _) =>
+                      _buildBody(ImportedTrailService.getAll()),
+                ),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                height: _panelVisible
+                    ? MediaQuery.of(context).size.height * 0.45
+                    : 0,
+                child: (_panelVisible && _selectedTrail != null)
+                    ? _TrailPreviewPanel(
+                        trail: _selectedTrail!,
+                        importedTrailId: _selectedTrailId,
+                        onExpand: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  TrailMapScreen(trail: _selectedTrail!),
+                            ),
+                          );
+                        },
+                        onClose: () => setState(() {
+                          _panelVisible = false;
+                          _selectedTrail = null;
+                          _selectedTrailId = null;
+                        }),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
           ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            height: _panelVisible
-                ? MediaQuery.of(context).size.height * 0.45
-                : 0,
-            child: (_panelVisible && _selectedTrail != null)
-                ? _TrailPreviewPanel(
-                    trail: _selectedTrail!,
-                    importedTrailId: _selectedTrailId,
-                    onExpand: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              TrailMapScreen(trail: _selectedTrail!),
-                        ),
-                      );
-                    },
-                    onClose: () => setState(() {
-                      _panelVisible = false;
-                      _selectedTrail = null;
-                      _selectedTrailId = null;
-                    }),
-                  )
-                : const SizedBox.shrink(),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _importFile,
+            tooltip: AppLocalizations.of(context).trailsImportTooltip,
+            child: const Icon(Icons.file_upload),
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _importFile,
-        tooltip: AppLocalizations.of(context).trailsImportTooltip,
-        child: const Icon(Icons.file_upload),
-      ),
+        );
+      },
     );
   }
 

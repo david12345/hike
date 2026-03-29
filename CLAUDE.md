@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.0.20+21 |
+| Version | 1.0.21+22 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -297,6 +297,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.0.15 | Sort order toggle for Log (by date) and Trails (by name) screens; preference persisted via SharedPreferences |
 | v1.0.19 | High priority: AnalyticsViewModel, TrailsImportExportService, UserPreferencesService, weather/GPS lifecycle fixes, segments cache, error logging |
 | v1.0.20 | GPS drift filter, pause/resume recording, pt/en localisation, analytics charts extracted, M2–M5 refactors |
+| v1.0.21 | Bug fixes: Trails sort icon update, Log sort by startTime, Analytics blank screen (DTO isolate fix, error state, zero-bar guards) |
 
 ---
 
@@ -426,3 +427,6 @@ All feature specs are in `docs/features/`:
 | `localisation-pt-en.md` | Device-locale-aware Portuguese (pt) + English (en) support via ARB/gen-l10n; removes forced-English hacks |
 | `recording-pause-resume.md` | Pause button on Track screen: freezes timer and GPS point collection, foreground notification shows Paused, Resume restores active recording |
 | `gps-drift-filter.md` | Suppress GPS jitter points while stationary: sliding window of N fixes within radius R; pure-Dart filter inside HikeRecordingController |
+| `trails-sort-icon-fix.md` | Fix Trails screen sort icon not updating when order changes: wrap Scaffold in ListenableBuilder for UserPreferencesService |
+| `log-sort-by-start-time.md` | Fix Log screen sort to use startTime comparator instead of Hive insertion order |
+| `analytics-blank-screen-fix.md` | Fix Analytics screen showing blank/zeroed data: surface errorMessage state, detach HikeRecord DTOs for isolate, add zero-bar guards to charts |

@@ -143,6 +143,7 @@
   "statsEmptyPeriod": "No hikes in this period",
   "statsEmptyNoHikes": "No hikes recorded yet",
   "statsNoData": "No data for this period",
+  "statsRetry": "Retry",
   "statsDistributionAxisLabel": "km per hike",
   "statsFilterPreset7d": "7 d",
   "statsFilterPreset30d": "30 d",

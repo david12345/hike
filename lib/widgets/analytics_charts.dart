@@ -165,6 +165,7 @@ class DayOfWeekChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).toString();
     // Build locale-aware day-of-week abbreviations starting from Monday.
     // DateTime(2024, 1, 1) is a Monday.
@@ -173,6 +174,7 @@ class DayOfWeekChart extends StatelessWidget {
         7, (i) => dayFmt.format(DateTime(2024, 1, 1 + i)));
 
     final maxY = counts.reduce((a, b) => a > b ? a : b).toDouble();
+    if (maxY == 0) return _noDataPlaceholder(l10n.statsNoData);
     final xInterval = _niceInterval(maxY < 1 ? 1 : maxY);
 
     final groups = <BarChartGroupData>[];
@@ -265,8 +267,10 @@ class DistributionChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     const bucketLabels = ['0–2', '2–5', '5–10', '10–20', '20+'];
     final maxY = buckets.reduce((a, b) => a > b ? a : b).toDouble();
+    if (maxY == 0) return _noDataPlaceholder(l10n.statsNoData);
     final yInterval = _niceInterval(maxY < 1 ? 1 : maxY);
 
     final groups = <BarChartGroupData>[];

@@ -143,6 +143,7 @@
   "statsEmptyPeriod": "Sem caminhadas neste período",
   "statsEmptyNoHikes": "Ainda sem caminhadas registadas",
   "statsNoData": "Sem dados para este período",
+  "statsRetry": "Tentar novamente",
   "statsDistributionAxisLabel": "km por caminhada",
   "statsFilterPreset7d": "7 d",
   "statsFilterPreset30d": "30 d",

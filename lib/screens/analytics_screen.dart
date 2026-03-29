@@ -69,7 +69,36 @@ class AnalyticsScreen extends StatelessWidget {
               ? const Center(child: CircularProgressIndicator())
               : viewModel.cachedStats == null && isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
+                  : viewModel.errorMessage != null && viewModel.cachedStats == null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.error_outline,
+                                    size: 48,
+                                    color: Theme.of(context).colorScheme.error),
+                                const SizedBox(height: 16),
+                                Text(
+                                  viewModel.errorMessage!,
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .error),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: viewModel.refresh,
+                                  child: Text(
+                                      AppLocalizations.of(context).statsRetry),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

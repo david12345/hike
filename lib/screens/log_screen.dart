@@ -25,11 +25,13 @@ class LogScreen extends StatelessWidget {
             final prefs = UserPreferencesService.instance;
             final sortDescending =
                 prefs.logSortOrder == LogSortOrder.descending;
-            final hikes = HikeService.getAll();
-            final sorted = sortDescending ? hikes : hikes.reversed.toList();
+            final hikes = HikeService.getAll()
+              ..sort((a, b) => sortDescending
+                  ? b.startTime.compareTo(a.startTime)
+                  : a.startTime.compareTo(b.startTime));
 
             return _LogScaffold(
-              hikes: sorted,
+              hikes: hikes,
               sortDescending: sortDescending,
             );
           },
