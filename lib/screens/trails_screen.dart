@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/imported_trail.dart';
 import '../models/osm_trail.dart';
 import '../services/imported_trail_service.dart';
@@ -116,9 +117,9 @@ class _TrailsScreenState extends State<TrailsScreen> {
         break;
       case ImportSuccess(:final count, :final filesProcessed,
           :final filesSkipped, :final filesFailed):
+        final l10n = AppLocalizations.of(context);
         final buf = StringBuffer(
-          'Imported $count trail${count == 1 ? '' : 's'}'
-          ' from $filesProcessed file${filesProcessed == 1 ? '' : 's'}',
+          l10n.trailsImportSuccess(count, filesProcessed),
         );
         if (filesSkipped > 0) {
           buf.write(' ($filesSkipped skipped: unsupported format)');
@@ -154,19 +155,21 @@ class _TrailsScreenState extends State<TrailsScreen> {
   }
 
   Future<void> _confirmDelete(String id, String name) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete trail?'),
-        content: Text('Remove "$name"? This cannot be undone.'),
+        title: Text(l10n.trailsDeleteDialogTitle),
+        content: Text(l10n.trailsDeleteDialogContent(name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(l10n.commonDelete,
+                style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -220,11 +223,12 @@ class _TrailsScreenState extends State<TrailsScreen> {
 
     if (trails.isEmpty) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(_selectionMode
-                  ? 'No trails selected.'
-                  : 'No trails to export.')),
+                  ? l10n.trailsNoTrailsSelected
+                  : l10n.trailsNoTrailsToExport)),
         );
       }
       return;
@@ -267,11 +271,12 @@ class _TrailsScreenState extends State<TrailsScreen> {
 
     if (trails.isEmpty) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(_selectionMode
-                  ? 'No trails selected.'
-                  : 'No trails to save.')),
+                  ? l10n.trailsNoTrailsSelected
+                  : l10n.trailsNoTrailsToExport)),
         );
       }
       return;
@@ -298,16 +303,16 @@ class _TrailsScreenState extends State<TrailsScreen> {
     if (!mounted) return;
     Navigator.pop(context); // dismiss loading dialog
 
+    final l10n = AppLocalizations.of(context);
     switch (result) {
       case SaveToDeviceSuccess(:final path):
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Saved to $path')));
+            .showSnackBar(SnackBar(content: Text(l10n.trailsSavedToPath(path))));
       case SaveToDeviceCancelled():
         break;
       case SaveToDevicePermissionDenied():
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Storage permission required to save files')),
+          SnackBar(content: Text(l10n.trailsStoragePermissionRequired)),
         );
       case SaveToDeviceFailure(:final message):
         ScaffoldMessenger.of(context)
@@ -368,22 +373,23 @@ class _TrailsScreenState extends State<TrailsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _importFile,
-        tooltip: 'Import GPX / KML / XML',
+        tooltip: AppLocalizations.of(context).trailsImportTooltip,
         child: const Icon(Icons.file_upload),
       ),
     );
   }
 
   PreferredSizeWidget _buildNormalAppBar() {
+    final l10n = AppLocalizations.of(context);
     final sortAscending = UserPreferencesService.instance.trailsSortOrder ==
         TrailsSortOrder.ascending;
     return AppBar(
-      title: const Text('Trail Browser'),
+      title: Text(l10n.trailsAppBarTitle),
       centerTitle: true,
       actions: [
         IconButton(
           icon: Icon(sortAscending ? Icons.arrow_upward : Icons.arrow_downward),
-          tooltip: sortAscending ? 'Z \u2192 A' : 'A \u2192 Z',
+          tooltip: sortAscending ? l10n.trailsSortZtoA : l10n.trailsSortAtoZ,
           onPressed: UserPreferencesService.instance.toggleTrailsSortOrder,
         ),
         _buildExportMenu(),
@@ -392,21 +398,23 @@ class _TrailsScreenState extends State<TrailsScreen> {
   }
 
   PreferredSizeWidget _buildSelectionAppBar() {
+    final l10n = AppLocalizations.of(context);
     final importedCount = ImportedTrailService.getAll().length;
     final allSelected =
         _selectedIds.length == importedCount && importedCount > 0;
     return AppBar(
       leading: IconButton(
         icon: const Icon(Icons.close),
-        tooltip: 'Cancel selection',
+        tooltip: l10n.trailsCancelSelection,
         onPressed: _exitSelectionMode,
       ),
-      title: Text('${_selectedIds.length} selected'),
+      title: Text(l10n.trailsSelectionCount(_selectedIds.length)),
       centerTitle: false,
       actions: [
         IconButton(
           icon: Icon(allSelected ? Icons.deselect : Icons.select_all),
-          tooltip: allSelected ? 'Deselect all' : 'Select all',
+          tooltip:
+              allSelected ? l10n.trailsDeselectAll : l10n.trailsSelectAll,
           onPressed: _toggleSelectAll,
         ),
         _buildExportMenu(),
@@ -415,12 +423,10 @@ class _TrailsScreenState extends State<TrailsScreen> {
   }
 
   Widget _buildExportMenu() {
-    final tooltip = _selectionMode
-        ? 'Export ${_selectedIds.length} trail${_selectedIds.length == 1 ? '' : 's'}'
-        : 'Export trails';
+    final l10n = AppLocalizations.of(context);
     return PopupMenuButton<String>(
       icon: const Icon(Icons.file_download),
-      tooltip: tooltip,
+      tooltip: l10n.trailsExportTooltip,
       onSelected: (value) {
         if (value == 'share') {
           _exportTrails();
@@ -428,22 +434,24 @@ class _TrailsScreenState extends State<TrailsScreen> {
           _saveTrailsToDevice();
         }
       },
-      itemBuilder: (_) => const [
-        PopupMenuItem(value: 'share', child: Text('Share')),
-        PopupMenuItem(value: 'save', child: Text('Save to device')),
+      itemBuilder: (_) => [
+        PopupMenuItem(value: 'share', child: Text(l10n.trailsShareMenuItem)),
+        PopupMenuItem(
+            value: 'save', child: Text(l10n.trailsSaveToDeviceMenuItem)),
       ],
     );
   }
 
   Widget _buildBody(List<ImportedTrail> importedTrails) {
+    final l10n = AppLocalizations.of(context);
     if (importedTrails.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Text(
-            'No trails imported. Tap + to import a GPX, KML, or XML file.',
+            l10n.trailsEmptyState,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, color: Colors.grey),
+            style: const TextStyle(fontSize: 15, color: Colors.grey),
           ),
         ),
       );
@@ -557,7 +565,7 @@ class _TrailsScreenState extends State<TrailsScreen> {
                         IconButton(
                           icon: const Icon(Icons.directions_walk,
                               color: Colors.green),
-                          tooltip: 'Start hike on this trail',
+                          tooltip: l10n.trailsStartHikeTooltip,
                           onPressed: () {
                             widget.onStartHike.value = t;
                           },
@@ -733,12 +741,12 @@ class _TrailPreviewPanelState extends State<_TrailPreviewPanel> {
               ),
               IconButton(
                 icon: const Icon(Icons.fullscreen, size: 20),
-                tooltip: 'Full screen',
+                tooltip: AppLocalizations.of(context).trailsFullScreenTooltip,
                 onPressed: widget.onExpand,
               ),
               IconButton(
                 icon: const Icon(Icons.close, size: 20),
-                tooltip: 'Close',
+                tooltip: AppLocalizations.of(context).trailsCloseTooltip,
                 onPressed: widget.onClose,
               ),
             ],

@@ -76,6 +76,26 @@ class ForegroundTrackingService {
     );
   }
 
+  /// Updates the notification to show a paused state.
+  ///
+  /// Displays the elapsed active time at the moment of pause (frozen).
+  static Future<void> pauseNotification({
+    required Duration activeElapsed,
+    required double distanceMeters,
+  }) async {
+    _lastNotificationUpdate = null; // reset throttle so next resume goes through
+    final h = activeElapsed.inHours.toString().padLeft(2, '0');
+    final m = (activeElapsed.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (activeElapsed.inSeconds % 60).toString().padLeft(2, '0');
+    final distText = distanceMeters >= 1000
+        ? '${(distanceMeters / 1000).toStringAsFixed(2)} km'
+        : '${distanceMeters.toStringAsFixed(0)} m';
+    await FlutterForegroundTask.updateService(
+      notificationTitle: 'Hike \u2014 Paused',
+      notificationText: '$h:$m:$s \u2014 $distText',
+    );
+  }
+
   /// Acquires or releases the CPU wake lock.
   ///
   /// Called by [HikeRecordingController] and the lifecycle listener in

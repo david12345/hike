@@ -1,4 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+
+/// Primary brand colour used in the theme seed and analytics charts.
+///
+/// Material green 800. Defined here so a colour change requires editing
+/// exactly one file.
+const kBrandGreen = Color(0xFF2E7D32);
 
 /// Default map centre used when no GPS fix is available.
 /// Corresponds to Coimbra, Portugal.
@@ -123,3 +130,21 @@ const kStationaryDistanceFilterMetres = 10;
 /// 10 seconds is a low-power rate that still captures the moment the hiker
 /// resumes walking (first fix within 10 s of movement).
 const kStationaryTimeIntervalSeconds = 10;
+
+// ---------------------------------------------------------------------------
+// Stationary drift filter
+// ---------------------------------------------------------------------------
+
+/// Number of consecutive GPS fixes that must all fall within
+/// [kDriftFilterRadiusMetres] of each other before the hiker is considered
+/// stationary for drift-filtering purposes.
+///
+/// 3 fixes at 2 s intervals = 6 seconds of stationary evidence.
+const int kDriftFilterWindowSize = 3;
+
+/// Radius (metres) within which consecutive fixes are treated as stationary
+/// jitter rather than genuine movement.
+///
+/// 8 m covers GPS jitter at moderate-sky locations (partial canopy, urban
+/// canyons) while remaining well below the 30 m accuracy gate threshold.
+const double kDriftFilterRadiusMetres = 8.0;

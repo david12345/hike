@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../models/hike_record.dart';
 import '../repositories/imported_trail_repository.dart';
@@ -86,33 +87,35 @@ class _SplashScreenState extends State<SplashScreen> {
   ///
   /// Returns `true` if the user chose Resume, `false` for Discard.
   Future<bool> _showRecoveryDialog(HikeRecord record) async {
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
     final startFormatted =
-        DateFormat('d MMM yyyy, HH:mm').format(record.startTime);
+        DateFormat('d MMM yyyy, HH:mm', locale).format(record.startTime);
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Unfinished Hike Found'),
+        title: Text(l10n.splashRecoveryDialogTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Name: ${record.name}'),
-            Text('Started: $startFormatted'),
-            Text('GPS points: ${record.latitudes.length}'),
+            Text(l10n.splashRecoveryName(record.name)),
+            Text(l10n.splashRecoveryStarted(startFormatted)),
+            Text(l10n.splashRecoveryPoints(record.latitudes.length)),
             const SizedBox(height: 12),
-            const Text('Would you like to resume or discard this hike?'),
+            Text(l10n.splashRecoveryQuestion),
           ],
         ),
         actions: [
           OutlinedButton(
             style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Discard'),
+            child: Text(l10n.splashRecoveryDiscard),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Resume'),
+            child: Text(l10n.splashRecoveryResume),
           ),
         ],
       ),

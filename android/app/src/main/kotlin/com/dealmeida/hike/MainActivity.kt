@@ -1,10 +1,8 @@
 package com.dealmeida.hike
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
-import java.util.Locale
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -19,12 +17,6 @@ class MainActivity : FlutterActivity() {
 
     // Stores file data from a cold-start intent until Dart calls getInitialFile().
     private var pendingFile: HashMap<String, Any>? = null
-
-    override fun attachBaseContext(newBase: Context) {
-        val config = newBase.resources.configuration
-        config.setLocale(Locale.ENGLISH)
-        super.attachBaseContext(newBase.createConfigurationContext(config))
-    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

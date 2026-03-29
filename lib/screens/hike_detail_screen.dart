@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import '../l10n/app_localizations.dart';
 import '../models/hike_record.dart';
 import '../services/tile_cache_service.dart';
 import '../services/tile_preference_service.dart';
@@ -38,6 +39,10 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
   /// Computed once in [initState]; [_route] is immutable after that.
   late final List<List<LatLng>> _segments;
 
+  /// Cached count of real (non-NaN) GPS points.
+  /// Computed once in [initState] to avoid a full list scan on every build.
+  late final int _pointCount;
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +70,7 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
         ? boundsForPoints(_realPoints)
         : null;
     _segments = segmentsFromPoints(_route);
+    _pointCount = _realPoints.length;
   }
 
   @override
@@ -93,9 +99,7 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
     final theme = Theme.of(context);
     final hasRoute = _realPoints.length > 1;
     final meaningfulBounds = _bounds != null;
-    final pointCount = widget.hike.latitudes
-        .where((lat) => !lat.isNaN)
-        .length;
+
 
     return Scaffold(
       appBar: AppBar(
@@ -157,9 +161,10 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
                   )
                 : Container(
                     color: theme.colorScheme.surfaceContainerHighest,
-                    child: const Center(
-                      child: Text('No route recorded',
-                          style: TextStyle(color: Colors.grey)),
+                    child: Center(
+                      child: Text(
+                          AppLocalizations.of(context).detailNoRoute,
+                          style: const TextStyle(color: Colors.grey)),
                     ),
                   ),
           ),
@@ -260,9 +265,9 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
                             _InfoRow(
                               icon: Icons.location_on,
                               label: 'GPS Points',
-                              value: pointCount == 0
+                              value: _pointCount == 0
                                   ? 'No GPS points'
-                                  : '$pointCount',
+                                  : '$_pointCount',
                             ),
                             if (widget.hike.steps > 0) ...[
                               _InfoRow(

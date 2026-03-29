@@ -1,0 +1,185 @@
+{
+  "@@locale": "en",
+
+  "navTrack": "Track",
+  "navMap": "Map",
+  "navLog": "Log",
+  "navTrails": "Trails",
+  "navStats": "Stats",
+
+  "trackAppBarTitle": "Track Hike",
+  "trackTileLat": "LAT",
+  "trackTileLon": "LON",
+  "trackTileAlt": "ALT",
+  "trackTileTime": "TIME",
+  "trackTileDist": "DIST",
+  "trackTilePts": "PTS",
+  "trackTileTemp": "TEMP",
+  "trackTileWeather": "WEATHER",
+  "trackTilePressure": "PRESSURE",
+  "trackTileSteps": "STEPS",
+  "trackTileKcal": "KCAL",
+  "trackTileSpeed": "SPEED",
+  "trackTileGps": "GPS",
+  "trackStartHike": "Start Hike",
+  "trackStopAndSave": "Stop & Save",
+  "trackSaving": "Saving...",
+  "trackRecording": "Recording...",
+  "trackPause": "Pause",
+  "trackResume": "Resume",
+  "trackPaused": "Paused",
+  "trackHikeSaved": "Hike saved!",
+  "trackNotAvailable": "N/A",
+
+  "logAppBarTitle": "Hike Log",
+  "logAppBarTitleCount": "Hike Log ({count})",
+  "@logAppBarTitleCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "logSortOldestFirst": "Oldest first",
+  "logSortNewestFirst": "Newest first",
+  "logEmptyTitle": "No hikes yet",
+  "logEmptySubtitle": "Start tracking your first hike!",
+  "logSaveToTrailsDialogTitle": "Save to Trails",
+  "logSaveToTrailsFieldLabel": "Trail name",
+  "logSavedToTrails": "Saved to Trails as '{name}'",
+  "@logSavedToTrails": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "logDeleteDialogTitle": "Delete Hike?",
+  "logDeleteDialogContent": "Delete \"{name}\"?",
+  "@logDeleteDialogContent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "logSaveToTrailsTooltip": "Save to Trails",
+
+  "detailNoRoute": "No route recorded",
+
+  "trailsAppBarTitle": "Trail Browser",
+  "trailsSelectionCount": "{count} selected",
+  "@trailsSelectionCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "trailsSortAtoZ": "A \u2192 Z",
+  "trailsSortZtoA": "Z \u2192 A",
+  "trailsCancelSelection": "Cancel selection",
+  "trailsSelectAll": "Select all",
+  "trailsDeselectAll": "Deselect all",
+  "trailsExportTooltip": "Export trails",
+  "trailsImportTooltip": "Import GPX / KML / XML",
+  "trailsShareMenuItem": "Share",
+  "trailsSaveToDeviceMenuItem": "Save to device",
+  "trailsEmptyState": "No trails imported. Tap + to import a GPX, KML, or XML file.",
+  "trailsDeleteDialogTitle": "Delete trail?",
+  "trailsDeleteDialogContent": "Remove \"{name}\"? This cannot be undone.",
+  "@trailsDeleteDialogContent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "trailsStartHikeTooltip": "Start hike on this trail",
+  "trailsFullScreenTooltip": "Full screen",
+  "trailsCloseTooltip": "Close",
+  "trailsImportSuccess": "Imported {count} trail(s) from {files} file(s)",
+  "@trailsImportSuccess": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "files": { "type": "int" }
+    }
+  },
+  "trailsNoTrailsSelected": "No trails selected.",
+  "trailsNoTrailsToExport": "No trails to export.",
+  "trailsStoragePermissionRequired": "Storage permission required to save files",
+  "trailsSavedToPath": "Saved to {path}",
+  "@trailsSavedToPath": {
+    "placeholders": {
+      "path": { "type": "String" }
+    }
+  },
+
+  "statsAppBarTitle": "Stats",
+  "statsAboutMenuItem": "About",
+  "statsSectionSummary": "Summary",
+  "statsSectionPersonalBests": "Personal Bests",
+  "statsSectionStreaks": "Streaks",
+  "statsSectionDistanceByMonth": "Distance by Month",
+  "statsSectionActivityByDay": "Activity by Day of Week",
+  "statsSectionDistributionTitle": "Distance Distribution",
+  "statsMetricTotalHikes": "Total Hikes",
+  "statsMetricTotalDistance": "Total Distance",
+  "statsMetricTotalTime": "Total Time",
+  "statsMetricAvgDistance": "Avg Distance",
+  "statsMetricAvgDuration": "Avg Duration",
+  "statsMetricAvgPace": "Avg Pace",
+  "statsMetricLongestDistance": "Longest (distance)",
+  "statsMetricLongestDuration": "Longest (duration)",
+  "statsMetricTotalSteps": "Total Steps",
+  "statsMetricBestDistance": "Best Distance",
+  "statsMetricBestPace": "Best Pace",
+  "statsMetricMostActiveWeek": "Most Active Week",
+  "statsMetricMostActiveWeekValue": "{count} hikes",
+  "@statsMetricMostActiveWeekValue": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statsMetricMostSteps": "Most Steps",
+  "statsMetricCurrentStreak": "Current Streak",
+  "statsMetricLongestStreak": "Longest Streak",
+  "statsStreakDays": "{count} days",
+  "@statsStreakDays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statsEmptyPeriod": "No hikes in this period",
+  "statsEmptyNoHikes": "No hikes recorded yet",
+  "statsNoData": "No data for this period",
+  "statsDistributionAxisLabel": "km per hike",
+  "statsFilterPreset7d": "7 d",
+  "statsFilterPreset30d": "30 d",
+  "statsFilterPreset3mo": "3 mo",
+  "statsFilterPresetAll": "All",
+  "statsDateStart": "Start",
+  "statsDateToday": "Today",
+
+  "splashRecoveryDialogTitle": "Unfinished Hike Found",
+  "splashRecoveryName": "Name: {name}",
+  "@splashRecoveryName": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "splashRecoveryStarted": "Started: {time}",
+  "@splashRecoveryStarted": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "splashRecoveryPoints": "GPS points: {count}",
+  "@splashRecoveryPoints": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "splashRecoveryQuestion": "Would you like to resume or discard this hike?",
+  "splashRecoveryResume": "Resume",
+  "splashRecoveryDiscard": "Discard",
+
+  "aboutTagline": "Essential tools for hiking.",
+
+  "commonCancel": "Cancel",
+  "commonSave": "Save",
+  "commonDelete": "Delete",
+  "commonClose": "Close",
+  "commonOk": "OK",
+  "commonErrorStopCurrentHike": "Stop the current hike before starting a new one."
+}

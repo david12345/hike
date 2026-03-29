@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import '../l10n/app_localizations.dart';
 import '../models/weather_data.dart';
 import '../services/compass_service.dart';
 import '../services/hike_recording_controller.dart';
-import '../services/tracking_state.dart';
 import '../utils/constants.dart';
 import '../widgets/compass_painter.dart';
 
@@ -44,18 +44,27 @@ class _TrackScreenState extends State<TrackScreen> {
     final saved = await _controller.stopRecording(onError: _showError);
     if (saved != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Hike saved!')),
+        SnackBar(content: Text(AppLocalizations.of(context).trackHikeSaved)),
       );
     }
+  }
+
+  Future<void> _pauseHike() async {
+    await _controller.pauseRecording();
+  }
+
+  Future<void> _resumeHike() async {
+    await _controller.resumeRecording(onError: _showError);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Track Hike'),
+        title: Text(l10n.trackAppBarTitle),
         centerTitle: true,
       ),
       body: Padding(
@@ -132,7 +141,7 @@ class _TrackScreenState extends State<TrackScreen> {
                           final lat = _controller.gpsAvailable && pos != null
                               ? pos.latitude.toStringAsFixed(4)
                               : '--';
-                          return _buildTile(theme, 'LAT', lat);
+                          return _buildTile(theme, l10n.trackTileLat, lat);
                         },
                       ),
                       ValueListenableBuilder<LatLng?>(
@@ -141,17 +150,16 @@ class _TrackScreenState extends State<TrackScreen> {
                           final lon = _controller.gpsAvailable && pos != null
                               ? pos.longitude.toStringAsFixed(4)
                               : '--';
-                          return _buildTile(theme, 'LON', lon);
+                          return _buildTile(theme, l10n.trackTileLon, lon);
                         },
                       ),
-                      ValueListenableBuilder<LatLng?>(
-                        valueListenable: _controller.positionNotifier,
-                        builder: (context, pos, _) {
-                          final tracking = TrackingState.instance;
-                          final alt = _controller.gpsAvailable && pos != null
-                              ? '${tracking.ambientAltitude.round()}m'
+                      ValueListenableBuilder<double>(
+                        valueListenable: _controller.altitudeNotifier,
+                        builder: (context, altitude, _) {
+                          final alt = _controller.gpsAvailable
+                              ? '${altitude.round()}m'
                               : '--';
-                          return _buildTile(theme, 'ALT', alt);
+                          return _buildTile(theme, l10n.trackTileAlt, alt);
                         },
                       ),
                       // TIME — recording-scoped
@@ -161,9 +169,12 @@ class _TrackScreenState extends State<TrackScreen> {
                           if (_controller.isRecording &&
                               _controller.inFlight != null) {
                             return _ElapsedTimeTile(
-                                startTime: _controller.inFlight!.startTime);
+                              startTime: _controller.inFlight!.startTime,
+                              label: l10n.trackTileTime,
+                              isPaused: _controller.isPaused,
+                            );
                           }
-                          return _buildTile(theme, 'TIME', '--');
+                          return _buildTile(theme, l10n.trackTileTime, '--');
                         },
                       ),
                       // DIST, PTS — recording-scoped
@@ -174,7 +185,7 @@ class _TrackScreenState extends State<TrackScreen> {
                               ? (_controller.inFlight?.distanceFormatted ??
                                   '0 m')
                               : '--';
-                          return _buildTile(theme, 'DIST', dist);
+                          return _buildTile(theme, l10n.trackTileDist, dist);
                         },
                       ),
                       ListenableBuilder(
@@ -183,7 +194,7 @@ class _TrackScreenState extends State<TrackScreen> {
                           final points = _controller.isRecording
                               ? '${_controller.pointCount}'
                               : '0';
-                          return _buildTile(theme, 'PTS', points);
+                          return _buildTile(theme, l10n.trackTilePts, points);
                         },
                       ),
                       // TEMP, WEATHER, PRESSURE — weather-scoped
@@ -193,7 +204,7 @@ class _TrackScreenState extends State<TrackScreen> {
                           final temp = weather != null
                               ? '${weather.temperatureCelsius.toStringAsFixed(1)}\u00B0C'
                               : '--';
-                          return _buildTile(theme, 'TEMP', temp);
+                          return _buildTile(theme, l10n.trackTileTemp, temp);
                         },
                       ),
                       ValueListenableBuilder<WeatherData?>(
@@ -201,7 +212,8 @@ class _TrackScreenState extends State<TrackScreen> {
                         builder: (context, weather, _) {
                           final weatherDesc =
                               weather?.weatherDescription ?? '--';
-                          return _buildTile(theme, 'WEATHER', weatherDesc);
+                          return _buildTile(
+                              theme, l10n.trackTileWeather, weatherDesc);
                         },
                       ),
                       ValueListenableBuilder<WeatherData?>(
@@ -210,7 +222,8 @@ class _TrackScreenState extends State<TrackScreen> {
                           final pressure = weather != null
                               ? weather.surfacePressureHpa.toStringAsFixed(1)
                               : '--';
-                          return _buildTile(theme, 'PRESSURE', pressure);
+                          return _buildTile(
+                              theme, l10n.trackTilePressure, pressure);
                         },
                       ),
                       // STEPS, KCAL — steps-scoped
@@ -220,7 +233,8 @@ class _TrackScreenState extends State<TrackScreen> {
                           final stepsValue = _controller.pedometerAvailable
                               ? '${stepData.steps}'
                               : '--';
-                          return _buildTile(theme, 'STEPS', stepsValue);
+                          return _buildTile(
+                              theme, l10n.trackTileSteps, stepsValue);
                         },
                       ),
                       ValueListenableBuilder<StepData>(
@@ -229,24 +243,22 @@ class _TrackScreenState extends State<TrackScreen> {
                           final kcalValue = _controller.pedometerAvailable
                               ? stepData.calories.toStringAsFixed(1)
                               : '--';
-                          return _buildTile(theme, 'KCAL', kcalValue);
+                          return _buildTile(
+                              theme, l10n.trackTileKcal, kcalValue);
                         },
                       ),
-                      // SPEED — position-scoped
-                      ValueListenableBuilder<LatLng?>(
-                        valueListenable: _controller.positionNotifier,
-                        builder: (context, pos, _) {
-                          final tracking = TrackingState.instance;
+                      // SPEED — speed-scoped
+                      ValueListenableBuilder<double>(
+                        valueListenable: _controller.speedNotifier,
+                        builder: (context, speed, _) {
                           final speedValue = _controller.isRecording &&
                                   _controller.gpsAvailable &&
-                                  pos != null &&
-                                  tracking.ambientSpeed >= 0
-                              ? (tracking.ambientSpeed * 3.6)
-                                  .toStringAsFixed(1)
+                                  speed >= 0
+                              ? (speed * 3.6).toStringAsFixed(1)
                               : '--';
                           return _buildTile(
                               theme,
-                              'SPEED',
+                              l10n.trackTileSpeed,
                               speedValue == '--'
                                   ? '--'
                                   : '$speedValue km/h');
@@ -262,7 +274,7 @@ class _TrackScreenState extends State<TrackScreen> {
                               : '±${accuracy.toStringAsFixed(0)} m';
                           return _buildTile(
                             theme,
-                            'GPS',
+                            l10n.trackTileGps,
                             label,
                             warning: poor,
                           );
@@ -274,47 +286,85 @@ class _TrackScreenState extends State<TrackScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            // --- Zone 3: Start/Stop button (fixed) ---
+            // --- Zone 3: Start/Stop/Pause/Resume buttons (fixed) ---
             ListenableBuilder(
               listenable: _controller,
               builder: (context, _) {
+                final isRecording = _controller.isRecording;
+                final isPaused = _controller.isPaused;
+                final isSaving = _controller.isSaving;
+
                 return Column(
                   children: [
-                    SizedBox(
-                      width: double.infinity,
-                      height: 64,
-                      child: _controller.isRecording
-                          ? ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16)),
+                    if (!isRecording)
+                      // Idle: full-width Start Hike button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 64,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            foregroundColor: theme.colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                          ),
+                          onPressed: _startHike,
+                          icon: const Icon(Icons.play_arrow),
+                          label: Text(l10n.trackStartHike,
+                              style: const TextStyle(fontSize: 20)),
+                        ),
+                      )
+                    else
+                      // Recording or paused: two buttons side by side
+                      SizedBox(
+                        height: 64,
+                        child: Row(
+                          children: [
+                            // Pause / Resume button
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16)),
+                                ),
+                                onPressed: isSaving
+                                    ? null
+                                    : (isPaused ? _resumeHike : _pauseHike),
+                                icon: Icon(isPaused
+                                    ? Icons.play_arrow
+                                    : Icons.pause),
+                                label: Text(
+                                  isPaused ? l10n.trackResume : l10n.trackPause,
+                                  style: const TextStyle(fontSize: 18),
+                                ),
                               ),
-                              onPressed:
-                                  _controller.isSaving ? null : _stopHike,
-                              icon: const Icon(Icons.stop),
-                              label: Text(
-                                _controller.isSaving
-                                    ? 'Saving...'
-                                    : 'Stop & Save',
-                                style: const TextStyle(fontSize: 20),
-                              ),
-                            )
-                          : ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: theme.colorScheme.primary,
-                                foregroundColor: theme.colorScheme.onPrimary,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16)),
-                              ),
-                              onPressed: _startHike,
-                              icon: const Icon(Icons.play_arrow),
-                              label: const Text('Start Hike',
-                                  style: TextStyle(fontSize: 20)),
                             ),
-                    ),
-                    if (_controller.isRecording) ...[
+                            const SizedBox(width: 8),
+                            // Stop & Save button
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16)),
+                                ),
+                                onPressed: isSaving ? null : _stopHike,
+                                icon: const Icon(Icons.stop),
+                                label: Text(
+                                  isSaving
+                                      ? l10n.trackSaving
+                                      : l10n.trackStopAndSave,
+                                  style: const TextStyle(fontSize: 18),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (isRecording) ...[
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -322,14 +372,22 @@ class _TrackScreenState extends State<TrackScreen> {
                           Container(
                             width: 10,
                             height: 10,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
+                            decoration: BoxDecoration(
+                              color:
+                                  isPaused ? Colors.amber : Colors.red,
                               shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text('Recording...',
-                              style: TextStyle(color: Colors.red)),
+                          Text(
+                            isPaused
+                                ? l10n.trackPaused
+                                : l10n.trackRecording,
+                            style: TextStyle(
+                                color: isPaused
+                                    ? Colors.amber
+                                    : Colors.red),
+                          ),
                         ],
                       ),
                     ],
@@ -384,11 +442,23 @@ class _TrackScreenState extends State<TrackScreen> {
 ///
 /// Owns its own [Timer] so the parent [_TrackScreenState] is not rebuilt
 /// every second just for the elapsed-time display.
+///
+/// When [isPaused] is true, the timer freezes at the current elapsed value.
 class _ElapsedTimeTile extends StatefulWidget {
-  /// The moment the hike recording started.
+  /// The moment the hike recording started (adjusted for pause durations).
   final DateTime startTime;
 
-  const _ElapsedTimeTile({required this.startTime});
+  /// Localised label for the tile (e.g. "TIME" / "TEMPO").
+  final String label;
+
+  /// When true, the timer is frozen at [startTime] offset and does not tick.
+  final bool isPaused;
+
+  const _ElapsedTimeTile({
+    required this.startTime,
+    required this.label,
+    required this.isPaused,
+  });
 
   @override
   State<_ElapsedTimeTile> createState() => _ElapsedTimeTileState();
@@ -402,6 +472,32 @@ class _ElapsedTimeTileState extends State<_ElapsedTimeTile> {
   void initState() {
     super.initState();
     _elapsed = DateTime.now().difference(widget.startTime);
+    if (!widget.isPaused) {
+      _startTimer();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_ElapsedTimeTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isPaused != widget.isPaused) {
+      if (widget.isPaused) {
+        _timer?.cancel();
+        _timer = null;
+        // Freeze at the current elapsed.
+        setState(() => _elapsed = DateTime.now().difference(widget.startTime));
+      } else {
+        _startTimer();
+      }
+    }
+    // startTime may be advanced on resume — recompute elapsed.
+    if (oldWidget.startTime != widget.startTime && !widget.isPaused) {
+      setState(() => _elapsed = DateTime.now().difference(widget.startTime));
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         setState(
@@ -436,7 +532,7 @@ class _ElapsedTimeTileState extends State<_ElapsedTimeTile> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'TIME',
+            widget.label,
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

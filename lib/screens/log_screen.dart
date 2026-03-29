@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 import '../models/hike_record.dart';
 import '../services/hike_service.dart';
 import '../services/imported_trail_service.dart';
 import '../services/user_preferences_service.dart';
 import 'hike_detail_screen.dart';
 
-/// Date format for hike start times displayed in the log list.
-final _hikeDateFormat = DateFormat('MMM d, y \u2022 HH:mm');
+/// Returns a localised date format for hike start times.
+DateFormat _hikeDateFormat(String locale) =>
+    DateFormat('MMM d, y \u2022 HH:mm', locale);
 
 class LogScreen extends StatelessWidget {
   const LogScreen({super.key});
@@ -43,40 +45,48 @@ class _LogScaffold extends StatelessWidget {
 
   const _LogScaffold({required this.hikes, required this.sortDescending});
 
-  AppBar _buildAppBar(BuildContext context, int hikeCount) => AppBar(
-        title: Text(hikeCount == 0 ? 'Hike Log' : 'Hike Log ($hikeCount)'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-                sortDescending ? Icons.arrow_downward : Icons.arrow_upward),
-            tooltip: sortDescending ? 'Oldest first' : 'Newest first',
-            onPressed: UserPreferencesService.instance.toggleLogSortOrder,
-          ),
-        ],
-      );
+  AppBar _buildAppBar(BuildContext context, int hikeCount) {
+    final l10n = AppLocalizations.of(context);
+    return AppBar(
+      title: Text(hikeCount == 0
+          ? l10n.logAppBarTitle
+          : l10n.logAppBarTitleCount(hikeCount)),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: Icon(
+              sortDescending ? Icons.arrow_downward : Icons.arrow_upward),
+          tooltip: sortDescending
+              ? l10n.logSortOldestFirst
+              : l10n.logSortNewestFirst,
+          onPressed: UserPreferencesService.instance.toggleLogSortOrder,
+        ),
+      ],
+    );
+  }
 
   Future<void> _saveToTrails(BuildContext context, HikeRecord hike) async {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: hike.name);
     final name = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Save to Trails'),
+        title: Text(l10n.logSaveToTrailsDialogTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
           maxLength: 50,
-          decoration: const InputDecoration(labelText: 'Trail name'),
+          decoration: InputDecoration(labelText: l10n.logSaveToTrailsFieldLabel),
           onSubmitted: (value) => Navigator.pop(ctx, value.trim()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, null),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Save'),
+            child: Text(l10n.commonSave),
           ),
         ],
       ),
@@ -89,23 +99,25 @@ class _LogScaffold extends StatelessWidget {
     await ImportedTrailService.save(trail);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Saved to Trails as '$name'")),
+      SnackBar(content: Text(l10n.logSavedToTrails(name))),
     );
   }
 
   Future<void> _delete(BuildContext context, HikeRecord hike) async {
+    final l10n = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete Hike?'),
-        content: Text('Delete "${hike.name}"?'),
+        title: Text(l10n.logDeleteDialogTitle),
+        content: Text(l10n.logDeleteDialogContent(hike.name)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: Text(l10n.commonCancel)),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(l10n.commonDelete,
+                style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -117,20 +129,22 @@ class _LogScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
     if (hikes.isEmpty) {
       return Scaffold(
         appBar: _buildAppBar(context, 0),
-        body: const Center(
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.hiking, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
-              Text('No hikes yet',
-                  style: TextStyle(color: Colors.grey, fontSize: 18)),
-              SizedBox(height: 8),
-              Text('Start tracking your first hike!',
-                  style: TextStyle(color: Colors.grey)),
+              const Icon(Icons.hiking, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(l10n.logEmptyTitle,
+                  style: const TextStyle(color: Colors.grey, fontSize: 18)),
+              const SizedBox(height: 8),
+              Text(l10n.logEmptySubtitle,
+                  style: const TextStyle(color: Colors.grey)),
             ],
           ),
         ),
@@ -150,7 +164,7 @@ class _LogScaffold extends StatelessWidget {
               leading: const CircleAvatar(child: Icon(Icons.terrain)),
               title: Text(hike.name),
               subtitle: Text(
-                _hikeDateFormat.format(hike.startTime),
+                _hikeDateFormat(locale).format(hike.startTime),
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -182,7 +196,7 @@ class _LogScaffold extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.bookmark_add_outlined,
                           color: Colors.deepOrange),
-                      tooltip: 'Save to Trails',
+                      tooltip: l10n.logSaveToTrailsTooltip,
                       onPressed: () => _saveToTrails(context, hike),
                     ),
                   IconButton(

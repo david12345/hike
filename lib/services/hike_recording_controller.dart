@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/hike_record.dart';
 import '../models/weather_data.dart';
+import '../utils/constants.dart';
 import '../utils/path_simplifier.dart';
 import 'compass_service.dart';
 import 'foreground_tracking_service.dart';
@@ -63,6 +64,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   // ---------------------------------------------------------------------------
 
   bool _isRecording = false;
+  bool _isPaused = false;
   bool _isSaving = false;
   bool _gpsAvailable = false;
   bool _compassAvailable = true;
@@ -77,6 +79,11 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
 
   /// Whether a hike recording is currently in progress.
   bool get isRecording => _isRecording;
+
+  /// Whether the current recording session is paused.
+  ///
+  /// Always false when [isRecording] is false.
+  bool get isPaused => _isPaused;
 
   /// Whether a save is in progress.
   bool get isSaving => _isSaving;
@@ -136,12 +143,23 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   /// A value of 0.0 means no fix has arrived yet.
   final ValueNotifier<double> accuracyNotifier = ValueNotifier(0.0);
 
+  /// Most recent GPS altitude in metres; updated on every fix.
+  ///
+  /// A value of 0.0 means no fix has arrived yet.
+  final ValueNotifier<double> altitudeNotifier = ValueNotifier(0.0);
+
+  /// Most recent GPS speed in m/s; updated on every fix.
+  ///
+  /// A value of -1.0 is used when speed is not yet available.
+  final ValueNotifier<double> speedNotifier = ValueNotifier(-1.0);
+
   // ---------------------------------------------------------------------------
   // Private fields
   // ---------------------------------------------------------------------------
 
   StreamSubscription<CompassEvent>? _compassSub;
   StreamSubscription<({double lat, double lon})>? _recordingPointSub;
+  DateTime? _pauseStartedAt;
   Timer? _weatherTimer;
   LatLng? _lastWeatherPosition;
   StreamSubscription<int>? _stepSub;
@@ -160,6 +178,20 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   Timer? _checkpointTimer;
   int _pointsSinceCheckpoint = 0;
   static const int _kCheckpointInterval = 10;
+
+  // ---------------------------------------------------------------------------
+  // Stationary drift filter state
+  // ---------------------------------------------------------------------------
+
+  /// Buffer of the N most recently accepted fixes (lat/lon only).
+  ///
+  /// Used by the stationary drift filter to decide whether an incoming fix
+  /// is part of a stationary jitter cluster.
+  final List<({double lat, double lon})> _driftWindow = [];
+
+  /// The centroid of the current drift window, updated on every window append.
+  /// Null when [_driftWindow] is empty.
+  ({double lat, double lon})? _driftCentroid;
 
   // ---------------------------------------------------------------------------
   // Initialisation
@@ -324,6 +356,8 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
 
   void _onTrackingChanged() {
     accuracyNotifier.value = TrackingState.instance.lastAccuracy;
+    altitudeNotifier.value = TrackingState.instance.ambientAltitude;
+    speedNotifier.value = TrackingState.instance.ambientSpeed;
     final pos = TrackingState.instance.ambientPosition;
     if (pos != null) {
       positionNotifier.value = pos;
@@ -381,34 +415,10 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
       _stepBaseline = 0;
       _stepBaselineSet = false;
 
-      // Start pedometer for this hike.
-      unawaited(_stepSub?.cancel() ?? Future.value());
-      _stepSub = PedometerService.stepCountStream.listen(
-        (steps) {
-          if (!_stepBaselineSet) {
-            _stepBaseline = steps;
-            _stepBaselineSet = true;
-          }
-          _hikeSteps = max(0, steps - _stepBaseline);
-          stepsNotifier.value = StepData(
-            steps: _hikeSteps,
-            calories: _hikeSteps * kCaloriesPerStep,
-          );
-        },
-        onError: (Object e) {
-          debugPrint('[HikeRecordingController] pedometer error during recording: $e');
-          _pedometerAvailable = false;
-          notifyListeners();
-        },
-      );
-
       _pointsSinceCheckpoint = 0;
-      _checkpointTimer = Timer.periodic(
-        const Duration(seconds: 30),
-        (_) {
-          if (_inFlight != null) unawaited(_saveCheckpoint());
-        },
-      );
+      _resetDriftFilter();
+      _startPedometerSubscription();
+      _startCheckpointTimer();
 
       _isRecording = true;
       notifyListeners();
@@ -423,6 +433,11 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
 
   void _onRecordingPoint(double lat, double lon) {
     if (_inFlight == null) return;
+
+    // --- Stationary drift filter ---
+    if (_applyDriftFilter(lat, lon)) return; // suppressed
+    // --- end drift filter ---
+
     if (_inFlight!.latitudes.isNotEmpty) {
       final dist = LocationService.distanceBetween(
         _inFlight!.latitudes.last,
@@ -451,6 +466,65 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
     }
   }
 
+  /// Applies the stationary drift filter to an incoming fix.
+  ///
+  /// Returns `true` if the fix should be suppressed (part of a stationary
+  /// jitter cluster), or `false` if it should be recorded.
+  bool _applyDriftFilter(double lat, double lon) {
+    // 1. Append to window and trim to capacity.
+    _driftWindow.add((lat: lat, lon: lon));
+    if (_driftWindow.length > kDriftFilterWindowSize) {
+      _driftWindow.removeAt(0);
+    }
+
+    // 2. Not enough history yet — always record.
+    if (_driftWindow.length < kDriftFilterWindowSize) {
+      return false;
+    }
+
+    // 3. Compute centroid.
+    double sumLat = 0, sumLon = 0;
+    for (final fix in _driftWindow) {
+      sumLat += fix.lat;
+      sumLon += fix.lon;
+    }
+    _driftCentroid = (
+      lat: sumLat / kDriftFilterWindowSize,
+      lon: sumLon / kDriftFilterWindowSize,
+    );
+
+    // 4. Compute max distance from centroid to any fix in window.
+    double maxDist = 0;
+    for (final fix in _driftWindow) {
+      final d = LocationService.distanceBetween(
+        _driftCentroid!.lat,
+        _driftCentroid!.lon,
+        fix.lat,
+        fix.lon,
+      );
+      if (d > maxDist) maxDist = d;
+    }
+
+    // 5. All fixes within radius — stationary cluster.
+    if (maxDist <= kDriftFilterRadiusMetres) {
+      return true;
+    }
+
+    // 6. Fix has exited stationary radius — movement detected.
+    // Clear the window so the next N fixes start a fresh detection round.
+    _driftWindow.clear();
+    return false;
+  }
+
+  /// Resets the drift filter state.
+  ///
+  /// Called at the start and end of each recording session so stale window
+  /// state from a previous session does not carry over.
+  void _resetDriftFilter() {
+    _driftWindow.clear();
+    _driftCentroid = null;
+  }
+
   /// Writes the in-flight record to Hive as a checkpoint.
   ///
   /// Fire-and-forget; failures are logged but not surfaced to the user.
@@ -472,6 +546,13 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   Future<HikeRecord?> stopRecording({
     required void Function(String message) onError,
   }) async {
+    // Handle the paused state — subscriptions are already cancelled.
+    if (_isPaused) {
+      _isPaused = false;
+      _pauseStartedAt = null;
+      // _recordingPointSub and _checkpointTimer are already cancelled.
+    }
+
     _isSaving = true;
     notifyListeners();
 
@@ -521,6 +602,8 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
     TrackingState.instance.stopRecording();
 
     _isRecording = false;
+    _isPaused = false;
+    _pauseStartedAt = null;
     _isSaving = false;
     _inFlight = null;
     _hikeSteps = 0;
@@ -529,9 +612,110 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
     _weatherFetchInProgress = false;
     _lastWeatherTimerFire = null;
     _lastError = null;
+    _resetDriftFilter();
     notifyListeners();
 
     return saved;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pause / Resume
+  // ---------------------------------------------------------------------------
+
+  /// Pauses the active recording session.
+  ///
+  /// - Cancels the GPS recording stream subscription (no new points accepted).
+  /// - Fires a final checkpoint save before cancelling.
+  /// - Cancels the pedometer subscription.
+  /// - Records wall time of pause so elapsed time can be corrected on resume.
+  /// - Updates the foreground notification to "Paused".
+  ///
+  /// No-op if [isRecording] is false or [isPaused] is already true.
+  Future<void> pauseRecording() async {
+    if (!_isRecording || _isPaused) return;
+
+    // Checkpoint before subscription is cancelled.
+    _checkpointTimer?.cancel();
+    _checkpointTimer = null;
+    await _saveCheckpoint();
+    _pointsSinceCheckpoint = 0;
+
+    // Cancel GPS recording subscription (TrackingState keeps running).
+    await _recordingPointSub?.cancel();
+    _recordingPointSub = null;
+
+    // Cancel pedometer — steps during rest are excluded.
+    await _stepSub?.cancel();
+    _stepSub = null;
+
+    _pauseStartedAt = DateTime.now();
+    _isPaused = true;
+
+    // Update notification.
+    if (_inFlight != null) {
+      final elapsed = DateTime.now().difference(_inFlight!.startTime);
+      await ForegroundTrackingService.pauseNotification(
+        activeElapsed: elapsed,
+        distanceMeters: _inFlight!.distanceMeters,
+      );
+    }
+
+    notifyListeners();
+  }
+
+  /// Resumes a paused recording session.
+  ///
+  /// - Re-subscribes to [TrackingState.instance.recordingPoints].
+  /// - Advances [_inFlight.startTime] forward by the paused duration so
+  ///   [_ElapsedTimeTile] reflects only active hiking time.
+  /// - Restarts pedometer and checkpoint timer.
+  /// - Updates the foreground notification to "Recording".
+  ///
+  /// No-op if [isPaused] is false.
+  Future<void> resumeRecording({
+    required void Function(String) onError,
+  }) async {
+    if (!_isPaused) return;
+
+    // Advance startTime to exclude the paused duration from elapsed time.
+    if (_inFlight != null && _pauseStartedAt != null) {
+      final pausedDuration = DateTime.now().difference(_pauseStartedAt!);
+      _inFlight!.startTime =
+          _inFlight!.startTime.add(pausedDuration);
+    }
+    _pauseStartedAt = null;
+
+    // Reset gap timer so the first post-pause fix does not trigger a gap marker.
+    TrackingState.instance.resetGapTimer();
+
+    // Reset drift filter so the first post-pause fix is always recorded.
+    _resetDriftFilter();
+
+    // Re-subscribe to the recording broadcast stream.
+    _recordingPointSub =
+        TrackingState.instance.recordingPoints.listen(
+      (event) => _onRecordingPoint(event.lat, event.lon),
+    );
+
+    // Reset pedometer baseline so rest-break steps are excluded.
+    _stepBaseline = 0;
+    _stepBaselineSet = false;
+    _startPedometerSubscription();
+
+    _startCheckpointTimer();
+
+    _isPaused = false;
+
+    // Restore the "Recording" notification.
+    if (_inFlight != null) {
+      final elapsed = DateTime.now().difference(_inFlight!.startTime);
+      unawaited(ForegroundTrackingService.updateNotification(
+        elapsed: elapsed,
+        distanceMeters: _inFlight!.distanceMeters,
+      ));
+    }
+
+    notifyListeners();
   }
 
   // ---------------------------------------------------------------------------
@@ -562,33 +746,10 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
       _stepBaseline = 0;
       _stepBaselineSet = false;
       _pointsSinceCheckpoint = 0;
+      _resetDriftFilter();
 
-      unawaited(_stepSub?.cancel() ?? Future.value());
-      _stepSub = PedometerService.stepCountStream.listen(
-        (steps) {
-          if (!_stepBaselineSet) {
-            _stepBaseline = steps;
-            _stepBaselineSet = true;
-          }
-          _hikeSteps = max(0, steps - _stepBaseline);
-          stepsNotifier.value = StepData(
-            steps: _hikeSteps,
-            calories: _hikeSteps * kCaloriesPerStep,
-          );
-        },
-        onError: (Object e) {
-          debugPrint('[HikeRecordingController] pedometer error during resume: $e');
-          _pedometerAvailable = false;
-          notifyListeners();
-        },
-      );
-
-      _checkpointTimer = Timer.periodic(
-        const Duration(seconds: 30),
-        (_) {
-          if (_inFlight != null) unawaited(_saveCheckpoint());
-        },
-      );
+      _startPedometerSubscription();
+      _startCheckpointTimer();
 
       _isRecording = true;
       notifyListeners();
@@ -597,6 +758,50 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
       debugPrint('resumeFromRecord failed: $e');
       onError('Could not resume hike. Please try again.');
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pedometer and checkpoint helpers (M2: deduplication)
+  // ---------------------------------------------------------------------------
+
+  /// Cancels any existing step subscription and starts a fresh one.
+  ///
+  /// Called from both [startRecording] and [resumeFromRecord] so that the
+  /// subscription setup logic appears in exactly one place.
+  void _startPedometerSubscription() {
+    unawaited(_stepSub?.cancel() ?? Future.value());
+    _stepSub = PedometerService.stepCountStream.listen(
+      (steps) {
+        if (!_stepBaselineSet) {
+          _stepBaseline = steps;
+          _stepBaselineSet = true;
+        }
+        _hikeSteps = max(0, steps - _stepBaseline);
+        stepsNotifier.value = StepData(
+          steps: _hikeSteps,
+          calories: _hikeSteps * kCaloriesPerStep,
+        );
+      },
+      onError: (Object e) {
+        debugPrint('[HikeRecordingController] pedometer error: $e');
+        _pedometerAvailable = false;
+        notifyListeners();
+      },
+    );
+  }
+
+  /// Cancels any existing checkpoint timer and starts a fresh 30-second timer.
+  ///
+  /// Called from both [startRecording] and [resumeFromRecord] so that the
+  /// timer setup logic appears in exactly one place.
+  void _startCheckpointTimer() {
+    _checkpointTimer?.cancel();
+    _checkpointTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) {
+        if (_inFlight != null) unawaited(_saveCheckpoint());
+      },
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -638,6 +843,8 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
     stepsNotifier.dispose();
     weatherNotifier.dispose();
     accuracyNotifier.dispose();
+    altitudeNotifier.dispose();
+    speedNotifier.dispose();
     super.dispose();
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // Sort order enums
@@ -40,6 +41,7 @@ extension AnalyticsFilterPresetExt on AnalyticsFilterPreset {
     return null;
   }
 
+  /// Non-localised label (legacy — kept for prefs key use only).
   String get label {
     switch (this) {
       case AnalyticsFilterPreset.days7:
@@ -50,6 +52,20 @@ extension AnalyticsFilterPresetExt on AnalyticsFilterPreset {
         return '3 mo';
       case AnalyticsFilterPreset.all:
         return 'All';
+    }
+  }
+
+  /// Localised display label using [AppLocalizations].
+  String localizedLabel(AppLocalizations l10n) {
+    switch (this) {
+      case AnalyticsFilterPreset.days7:
+        return l10n.statsFilterPreset7d;
+      case AnalyticsFilterPreset.days30:
+        return l10n.statsFilterPreset30d;
+      case AnalyticsFilterPreset.months3:
+        return l10n.statsFilterPreset3mo;
+      case AnalyticsFilterPreset.all:
+        return l10n.statsFilterPresetAll;
     }
   }
 

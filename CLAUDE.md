@@ -49,11 +49,11 @@ lib/
 │   ├── hike_detail_screen.dart     # Route map + DraggableScrollableSheet stats panel; OSM ↔ OpenTopoMap toggle
 │   ├── trails_screen.dart          # Imported trail browser; rebuilds via ImportedTrailService.version
 │   ├── trail_map_screen.dart       # Full-screen map for a single OsmTrail (deepOrange polyline)
-│   ├── analytics_screen.dart       # Stats tab: date filter, summary metrics, personal bests, streaks, 3 fl_chart charts.
+│   ├── analytics_screen.dart       # Stats tab: date filter, summary metrics, personal bests, streaks; chart widgets in analytics_charts.dart.
 │   └── about_screen.dart           # App info (black bg, centered). Accessible via Analytics AppBar overflow menu.
 ├── services/
 │   ├── hike_service.dart           # Hive CRUD for HikeRecord + version ValueNotifier + findUnfinished()
-│   ├── hike_recording_controller.dart # ChangeNotifier: GPS recording lifecycle, checkpoint saves, error handling; WidgetsBindingObserver skips weather when backgrounded
+│   ├── hike_recording_controller.dart # ChangeNotifier: GPS recording lifecycle, checkpoint saves, error handling; exposes altitudeNotifier, speedNotifier, headingNotifier, weatherNotifier, stepsNotifier, accuracyNotifier, positionNotifier; WidgetsBindingObserver skips weather when backgrounded
 │   ├── location_service.dart       # Geolocator wrapper; trackPosition() (high) + trackPositionAmbient() (medium)
 │   ├── tracking_state.dart         # Singleton ChangeNotifier: sole GPS stream owner, ambient/recording modes; WidgetsBindingObserver pauses ambient GPS when backgrounded
 │   ├── weather_service.dart        # Open-Meteo API client — temperature, weather code, air pressure
@@ -71,10 +71,11 @@ lib/
 │   └── analytics_view_model.dart   # ChangeNotifier ViewModel: filter state, prefs I/O, isolate compute for AnalyticsScreen
 ├── utils/
 │   ├── map_utils.dart              # boundsForPoints(List<LatLng>) → LatLngBounds
-│   └── constants.dart              # kFallbackLocation, kOsmTileUrl, kTopoTileUrl, kForegroundServiceId
+│   └── constants.dart              # kFallbackLocation, kBrandGreen, kOsmTileUrl, kTopoTileUrl, kForegroundServiceId
 └── widgets/
     ├── compass_painter.dart        # Shared CompassPainter (CustomPainter) — draws rose + degree at center
     ├── about_content.dart          # Shared content widget for SplashScreen + AboutScreen (centred layout)
+    ├── analytics_charts.dart       # MonthlyDistanceChart, DayOfWeekChart, DistributionChart for AnalyticsScreen
     └── map_attribution_widget.dart # OSM/OpenTopoMap attribution overlay for map screens
 ```
 
@@ -421,3 +422,6 @@ All feature specs are in `docs/features/`:
 | `tile-cache-size-limit.md` | Add maximum size cap (500 MB) to DbCacheStore to prevent unbounded disk growth (N5) |
 | `gps-accuracy-field-validation.md` | Use speedAccuracyMetersPerSecond to guard heading trigger; gate altitude EMA on altitudeAccuracy to reduce jitter on poor fixes |
 | `gps-stationary-detection.md` | Adaptive GPS recording: switch to low-frequency stream when hiker is stationary, resume high-frequency on movement |
+| `localisation-pt-en.md` | Device-locale-aware Portuguese (pt) + English (en) support via ARB/gen-l10n; removes forced-English hacks |
+| `recording-pause-resume.md` | Pause button on Track screen: freezes timer and GPS point collection, foreground notification shows Paused, Resume restores active recording |
+| `gps-drift-filter.md` | Suppress GPS jitter points while stationary: sliding window of N fixes within radius R; pure-Dart filter inside HikeRecordingController |

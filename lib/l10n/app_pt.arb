@@ -1,0 +1,185 @@
+{
+  "@@locale": "pt",
+
+  "navTrack": "Rastreio",
+  "navMap": "Mapa",
+  "navLog": "Registo",
+  "navTrails": "Trilhos",
+  "navStats": "Estatísticas",
+
+  "trackAppBarTitle": "Rastrear Caminhada",
+  "trackTileLat": "LAT",
+  "trackTileLon": "LON",
+  "trackTileAlt": "ALT",
+  "trackTileTime": "TEMPO",
+  "trackTileDist": "DIST",
+  "trackTilePts": "PTS",
+  "trackTileTemp": "TEMP",
+  "trackTileWeather": "TEMPO",
+  "trackTilePressure": "PRESSÃO",
+  "trackTileSteps": "PASSOS",
+  "trackTileKcal": "KCAL",
+  "trackTileSpeed": "VEL.",
+  "trackTileGps": "GPS",
+  "trackStartHike": "Iniciar Caminhada",
+  "trackStopAndSave": "Parar e Guardar",
+  "trackSaving": "A guardar...",
+  "trackRecording": "A gravar...",
+  "trackPause": "Pausar",
+  "trackResume": "Retomar",
+  "trackPaused": "Pausado",
+  "trackHikeSaved": "Caminhada guardada!",
+  "trackNotAvailable": "N/D",
+
+  "logAppBarTitle": "Registo de Caminhadas",
+  "logAppBarTitleCount": "Registo ({count})",
+  "@logAppBarTitleCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "logSortOldestFirst": "Mais antigo primeiro",
+  "logSortNewestFirst": "Mais recente primeiro",
+  "logEmptyTitle": "Ainda sem caminhadas",
+  "logEmptySubtitle": "Comece a registar a sua primeira caminhada!",
+  "logSaveToTrailsDialogTitle": "Guardar em Trilhos",
+  "logSaveToTrailsFieldLabel": "Nome do trilho",
+  "logSavedToTrails": "Guardado em Trilhos como '{name}'",
+  "@logSavedToTrails": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "logDeleteDialogTitle": "Eliminar Caminhada?",
+  "logDeleteDialogContent": "Eliminar \"{name}\"?",
+  "@logDeleteDialogContent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "logSaveToTrailsTooltip": "Guardar em Trilhos",
+
+  "detailNoRoute": "Sem rota registada",
+
+  "trailsAppBarTitle": "Navegador de Trilhos",
+  "trailsSelectionCount": "{count} selecionados",
+  "@trailsSelectionCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "trailsSortAtoZ": "A \u2192 Z",
+  "trailsSortZtoA": "Z \u2192 A",
+  "trailsCancelSelection": "Cancelar seleção",
+  "trailsSelectAll": "Selecionar tudo",
+  "trailsDeselectAll": "Desmarcar tudo",
+  "trailsExportTooltip": "Exportar trilhos",
+  "trailsImportTooltip": "Importar GPX / KML / XML",
+  "trailsShareMenuItem": "Partilhar",
+  "trailsSaveToDeviceMenuItem": "Guardar no dispositivo",
+  "trailsEmptyState": "Sem trilhos importados. Toque em + para importar um ficheiro GPX, KML ou XML.",
+  "trailsDeleteDialogTitle": "Eliminar trilho?",
+  "trailsDeleteDialogContent": "Remover \"{name}\"? Esta ação não pode ser desfeita.",
+  "@trailsDeleteDialogContent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "trailsStartHikeTooltip": "Iniciar caminhada neste trilho",
+  "trailsFullScreenTooltip": "Ecrã completo",
+  "trailsCloseTooltip": "Fechar",
+  "trailsImportSuccess": "Importados {count} trilho(s) de {files} ficheiro(s)",
+  "@trailsImportSuccess": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "files": { "type": "int" }
+    }
+  },
+  "trailsNoTrailsSelected": "Nenhum trilho selecionado.",
+  "trailsNoTrailsToExport": "Sem trilhos para exportar.",
+  "trailsStoragePermissionRequired": "Permissão de armazenamento necessária para guardar ficheiros",
+  "trailsSavedToPath": "Guardado em {path}",
+  "@trailsSavedToPath": {
+    "placeholders": {
+      "path": { "type": "String" }
+    }
+  },
+
+  "statsAppBarTitle": "Estatísticas",
+  "statsAboutMenuItem": "Sobre",
+  "statsSectionSummary": "Resumo",
+  "statsSectionPersonalBests": "Melhores Marcas",
+  "statsSectionStreaks": "Sequências",
+  "statsSectionDistanceByMonth": "Distância por Mês",
+  "statsSectionActivityByDay": "Atividade por Dia da Semana",
+  "statsSectionDistributionTitle": "Distribuição de Distância",
+  "statsMetricTotalHikes": "Total de Caminhadas",
+  "statsMetricTotalDistance": "Distância Total",
+  "statsMetricTotalTime": "Tempo Total",
+  "statsMetricAvgDistance": "Distância Média",
+  "statsMetricAvgDuration": "Duração Média",
+  "statsMetricAvgPace": "Ritmo Médio",
+  "statsMetricLongestDistance": "Mais Longa (distância)",
+  "statsMetricLongestDuration": "Mais Longa (duração)",
+  "statsMetricTotalSteps": "Total de Passos",
+  "statsMetricBestDistance": "Melhor Distância",
+  "statsMetricBestPace": "Melhor Ritmo",
+  "statsMetricMostActiveWeek": "Semana Mais Ativa",
+  "statsMetricMostActiveWeekValue": "{count} caminhadas",
+  "@statsMetricMostActiveWeekValue": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statsMetricMostSteps": "Mais Passos",
+  "statsMetricCurrentStreak": "Sequência Atual",
+  "statsMetricLongestStreak": "Maior Sequência",
+  "statsStreakDays": "{count} dias",
+  "@statsStreakDays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statsEmptyPeriod": "Sem caminhadas neste período",
+  "statsEmptyNoHikes": "Ainda sem caminhadas registadas",
+  "statsNoData": "Sem dados para este período",
+  "statsDistributionAxisLabel": "km por caminhada",
+  "statsFilterPreset7d": "7 d",
+  "statsFilterPreset30d": "30 d",
+  "statsFilterPreset3mo": "3 meses",
+  "statsFilterPresetAll": "Todos",
+  "statsDateStart": "Início",
+  "statsDateToday": "Hoje",
+
+  "splashRecoveryDialogTitle": "Caminhada Inacabada Encontrada",
+  "splashRecoveryName": "Nome: {name}",
+  "@splashRecoveryName": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "splashRecoveryStarted": "Iniciada: {time}",
+  "@splashRecoveryStarted": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "splashRecoveryPoints": "Pontos GPS: {count}",
+  "@splashRecoveryPoints": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "splashRecoveryQuestion": "Deseja retomar ou descartar esta caminhada?",
+  "splashRecoveryResume": "Retomar",
+  "splashRecoveryDiscard": "Descartar",
+
+  "aboutTagline": "Ferramentas essenciais para caminhadas.",
+
+  "commonCancel": "Cancelar",
+  "commonSave": "Guardar",
+  "commonDelete": "Eliminar",
+  "commonClose": "Fechar",
+  "commonOk": "OK",
+  "commonErrorStopCurrentHike": "Pare a caminhada atual antes de iniciar uma nova."
+}

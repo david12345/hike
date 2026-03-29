@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 
 /// Shared visual content widget used by both [SplashScreen] and [AboutScreen].
 ///
@@ -27,7 +28,7 @@ class AboutContent extends StatelessWidget {
   ///
   /// Returned as a shrink-wrapped [Column] so [Center] can place it at the
   /// exact visual center of the screen.
-  Widget _buildInfoBlock() {
+  Widget _buildInfoBlock(String tagline) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -50,9 +51,9 @@ class AboutContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Essential tools for hiking.',
-          style: TextStyle(
+        Text(
+          tagline,
+          style: const TextStyle(
             color: Colors.white70,
             fontSize: 16,
           ),
@@ -99,6 +100,7 @@ class AboutContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: _buildInfoBlock());
+    final tagline = AppLocalizations.of(context).aboutTagline;
+    return Center(child: _buildInfoBlock(tagline));
   }
 }

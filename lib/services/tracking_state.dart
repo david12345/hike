@@ -255,6 +255,16 @@ class TrackingState extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// Resets the last-accepted-fix timestamp so the next fix does not
+  /// trigger a gap marker after a deliberate user pause.
+  ///
+  /// Call immediately before re-subscribing to [recordingPoints] in
+  /// [HikeRecordingController.resumeRecording].
+  void resetGapTimer() {
+    _lastAcceptedFixAt = DateTime.now();
+    _gapJustInserted = false;
+  }
+
   /// Cancels the active GPS subscription and closes the recording point
   /// stream controller.
   ///

@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
+import 'l10n/app_localizations.dart';
 import 'models/hike_record.dart';
 import 'models/osm_trail.dart';
 import 'screens/track_screen.dart';
@@ -18,10 +18,10 @@ import 'services/intent_handler_service.dart';
 import 'services/tile_preference_service.dart';
 import 'services/tracking_state.dart';
 import 'viewmodels/analytics_view_model.dart';
+import 'utils/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Intl.defaultLocale = 'en';
   ForegroundTrackingService.init();
   await TilePreferenceService.instance.init();
   runApp(const HikeApp());
@@ -35,24 +35,27 @@ class HikeApp extends StatelessWidget {
     return MaterialApp(
       title: 'Hike',
       debugShowCheckedModeBanner: false,
-      locale: const Locale('en'),
-      supportedLocales: const [Locale('en')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localeResolutionCallback: (deviceLocale, supportedLocales) {
+        if (deviceLocale?.languageCode == 'pt') {
+          Intl.defaultLocale = 'pt';
+          return const Locale('pt');
+        }
+        Intl.defaultLocale = 'en';
+        return const Locale('en');
+      },
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32),
+          seedColor: kBrandGreen,
           brightness: Brightness.light,
         ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32),
+          seedColor: kBrandGreen,
           brightness: Brightness.dark,
         ),
       ),
@@ -149,7 +152,9 @@ class _HomePageState extends State<HomePage> {
     _pendingGuideTrail.value = null;
 
     if (_recordingController.isRecording) {
-      _showError('Stop the current hike before starting a new one.');
+      if (mounted) {
+        _showError(AppLocalizations.of(context).commonErrorStopCurrentHike);
+      }
       return;
     }
 
@@ -181,36 +186,41 @@ class _HomePageState extends State<HomePage> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: _onTabChanged,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.play_circle_outline),
-            selectedIcon: Icon(Icons.play_circle),
-            label: 'Track',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Map',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.list_alt_outlined),
-            selectedIcon: Icon(Icons.list_alt),
-            label: 'Log',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
-            label: 'Trails',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Stats',
-          ),
-        ],
+      bottomNavigationBar: Builder(
+        builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: _onTabChanged,
+            destinations: [
+              NavigationDestination(
+                icon: const Icon(Icons.play_circle_outline),
+                selectedIcon: const Icon(Icons.play_circle),
+                label: l10n.navTrack,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.map_outlined),
+                selectedIcon: const Icon(Icons.map),
+                label: l10n.navMap,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.list_alt_outlined),
+                selectedIcon: const Icon(Icons.list_alt),
+                label: l10n.navLog,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.explore_outlined),
+                selectedIcon: const Icon(Icons.explore),
+                label: l10n.navTrails,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.bar_chart_outlined),
+                selectedIcon: const Icon(Icons.bar_chart),
+                label: l10n.navStats,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
