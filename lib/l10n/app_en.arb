@@ -60,6 +60,15 @@
   "logSaveToTrailsTooltip": "Save to Trails",
 
   "detailNoRoute": "No route recorded",
+  "detailLabelDate": "Date",
+  "detailLabelStart": "Start",
+  "detailLabelEnd": "End",
+  "detailLabelDuration": "Duration",
+  "detailLabelDistance": "Distance",
+  "detailLabelGpsPoints": "GPS Points",
+  "detailLabelNoGpsPoints": "No GPS points",
+  "detailLabelSteps": "Steps",
+  "detailLabelCalories": "Calories",
 
   "trailsAppBarTitle": "Trail Browser",
   "trailsSelectionCount": "{count} selected",
@@ -182,5 +191,20 @@
   "commonDelete": "Delete",
   "commonClose": "Close",
   "commonOk": "OK",
-  "commonErrorStopCurrentHike": "Stop the current hike before starting a new one."
+  "commonErrorStopCurrentHike": "Stop the current hike before starting a new one.",
+
+  "trackBgLocationDenied": "For screen-off tracking, allow location access \"All the time\" in Settings.",
+
+  "trailsImportSkipped": "{count} skipped: unsupported format",
+  "@trailsImportSkipped": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "trailsImportFailed": "{count} failed to parse",
+  "@trailsImportFailed": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  }
 }

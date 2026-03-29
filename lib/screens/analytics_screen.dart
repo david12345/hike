@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import '../models/hike_record.dart';
 import '../services/analytics_service.dart';
-import '../services/hike_service.dart';
 import '../services/user_preferences_service.dart';
 import '../viewmodels/analytics_view_model.dart';
 import 'about_screen.dart';
@@ -35,8 +34,6 @@ class AnalyticsScreen extends StatelessWidget {
       builder: (context, _) {
         final isLoading = viewModel.isLoading;
         final stats = viewModel.cachedStats ?? AnalyticsStats.empty;
-        final allHikes = HikeService.getAll();
-        final filtered = viewModel.applyFilter(allHikes);
 
         return Scaffold(
           appBar: AppBar(
@@ -110,8 +107,8 @@ class AnalyticsScreen extends StatelessWidget {
                             onCustomRange: viewModel.setCustomRange,
                           ),
                           const SizedBox(height: 16),
-                          if (filtered.isEmpty)
-                            _EmptyState(hasAnyHikes: allHikes.isNotEmpty)
+                          if (viewModel.filteredIsEmpty)
+                            _EmptyState(hasAnyHikes: viewModel.hasAnyHikes)
                           else ...[
                             _SectionHeader(AppLocalizations.of(context)
                                 .statsSectionSummary),

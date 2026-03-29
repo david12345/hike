@@ -124,6 +124,7 @@ class _LogScaffold extends StatelessWidget {
         ],
       ),
     );
+    if (!context.mounted) return;
     if (confirm == true) {
       await HikeService.delete(hike.id);
     }

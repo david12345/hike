@@ -138,6 +138,33 @@ class AppLocalizationsPt extends AppLocalizations {
   String get detailNoRoute => 'Sem rota registada';
 
   @override
+  String get detailLabelDate => 'Data';
+
+  @override
+  String get detailLabelStart => 'Início';
+
+  @override
+  String get detailLabelEnd => 'Fim';
+
+  @override
+  String get detailLabelDuration => 'Duração';
+
+  @override
+  String get detailLabelDistance => 'Distância';
+
+  @override
+  String get detailLabelGpsPoints => 'Pontos GPS';
+
+  @override
+  String get detailLabelNoGpsPoints => 'Sem pontos GPS';
+
+  @override
+  String get detailLabelSteps => 'Passos';
+
+  @override
+  String get detailLabelCalories => 'Calorias';
+
+  @override
   String get trailsAppBarTitle => 'Navegador de Trilhos';
 
   @override
@@ -374,4 +401,18 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get commonErrorStopCurrentHike =>
       'Pare a caminhada atual antes de iniciar uma nova.';
+
+  @override
+  String get trackBgLocationDenied =>
+      'Para rastreio com ecrã desligado, permita o acesso à localização \"Sempre\" nas Definições.';
+
+  @override
+  String trailsImportSkipped(int count) {
+    return '$count ignorado(s): formato não suportado';
+  }
+
+  @override
+  String trailsImportFailed(int count) {
+    return '$count falhou ao analisar';
+  }
 }

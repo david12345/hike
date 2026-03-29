@@ -231,57 +231,62 @@ class _HikeDetailScreenState extends State<HikeDetailScreen> {
                       ),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        child: Column(
-                          children: [
-                            _InfoRow(
-                              icon: Icons.calendar_today,
-                              label: 'Date',
-                              value: DateFormat('MMMM d, y')
-                                  .format(widget.hike.startTime),
-                            ),
-                            _InfoRow(
-                              icon: Icons.access_time,
-                              label: 'Start',
-                              value: DateFormat('HH:mm')
-                                  .format(widget.hike.startTime),
-                            ),
-                            if (widget.hike.endTime != null)
-                              _InfoRow(
-                                icon: Icons.flag,
-                                label: 'End',
-                                value: DateFormat('HH:mm')
-                                    .format(widget.hike.endTime!),
-                              ),
-                            _InfoRow(
-                              icon: Icons.timer,
-                              label: 'Duration',
-                              value: widget.hike.durationFormatted,
-                            ),
-                            _InfoRow(
-                              icon: Icons.straighten,
-                              label: 'Distance',
-                              value: widget.hike.distanceFormatted,
-                            ),
-                            _InfoRow(
-                              icon: Icons.location_on,
-                              label: 'GPS Points',
-                              value: _pointCount == 0
-                                  ? 'No GPS points'
-                                  : '$_pointCount',
-                            ),
-                            if (widget.hike.steps > 0) ...[
-                              _InfoRow(
-                                icon: Icons.directions_walk,
-                                label: 'Steps',
-                                value: widget.hike.stepsFormatted,
-                              ),
-                              _InfoRow(
-                                icon: Icons.local_fire_department,
-                                label: 'Calories',
-                                value: widget.hike.caloriesFormatted,
-                              ),
-                            ],
-                          ],
+                        child: Builder(
+                          builder: (context) {
+                            final l10n = AppLocalizations.of(context);
+                            return Column(
+                              children: [
+                                _InfoRow(
+                                  icon: Icons.calendar_today,
+                                  label: l10n.detailLabelDate,
+                                  value: DateFormat('MMMM d, y')
+                                      .format(widget.hike.startTime),
+                                ),
+                                _InfoRow(
+                                  icon: Icons.access_time,
+                                  label: l10n.detailLabelStart,
+                                  value: DateFormat('HH:mm')
+                                      .format(widget.hike.startTime),
+                                ),
+                                if (widget.hike.endTime != null)
+                                  _InfoRow(
+                                    icon: Icons.flag,
+                                    label: l10n.detailLabelEnd,
+                                    value: DateFormat('HH:mm')
+                                        .format(widget.hike.endTime!),
+                                  ),
+                                _InfoRow(
+                                  icon: Icons.timer,
+                                  label: l10n.detailLabelDuration,
+                                  value: widget.hike.durationFormatted,
+                                ),
+                                _InfoRow(
+                                  icon: Icons.straighten,
+                                  label: l10n.detailLabelDistance,
+                                  value: widget.hike.distanceFormatted,
+                                ),
+                                _InfoRow(
+                                  icon: Icons.location_on,
+                                  label: l10n.detailLabelGpsPoints,
+                                  value: _pointCount == 0
+                                      ? l10n.detailLabelNoGpsPoints
+                                      : '$_pointCount',
+                                ),
+                                if (widget.hike.steps > 0) ...[
+                                  _InfoRow(
+                                    icon: Icons.directions_walk,
+                                    label: l10n.detailLabelSteps,
+                                    value: widget.hike.stepsFormatted,
+                                  ),
+                                  _InfoRow(
+                                    icon: Icons.local_fire_department,
+                                    label: l10n.detailLabelCalories,
+                                    value: widget.hike.caloriesFormatted,
+                                  ),
+                                ],
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ],

@@ -69,8 +69,6 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   bool _gpsAvailable = false;
   bool _compassAvailable = true;
   bool _pedometerAvailable = true;
-  double? _compassHeading;
-  WeatherData? _weatherData;
   int _hikeSteps = 0;
   String? _lastError;
 
@@ -91,17 +89,8 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   /// True once the first GPS fix arrives.
   bool get gpsAvailable => _gpsAvailable;
 
-  /// Most recent compass heading; null if no magnetometer.
-  double? get compassHeading => _compassHeading;
-
   /// False if device has no magnetometer.
   bool get compassAvailable => _compassAvailable;
-
-  /// Most recent successful weather fetch.
-  WeatherData? get weatherData => _weatherData;
-
-  /// Steps accumulated since recording started; 0 when idle.
-  int get hikeSteps => _hikeSteps;
 
   /// Derived calories burned from step count.
   double get caloriesBurned => _hikeSteps * kCaloriesPerStep;
@@ -268,7 +257,6 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
         }
         if (_lastSetHeading == null || (h - _lastSetHeading!).abs() >= 1) {
           _lastSetHeading = h;
-          _compassHeading = h;
           headingNotifier.value = h;
           if (!_compassAvailable) {
             _compassAvailable = true;
@@ -341,7 +329,6 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
       final data =
           await WeatherService.fetchCurrent(pos.latitude, pos.longitude);
       if (data != null) {
-        _weatherData = data;
         _lastWeatherPosition = pos;
         weatherNotifier.value = data;
       }
@@ -389,16 +376,17 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   /// Starts a new hike recording session.
   ///
   /// [onError] is called when an error needs to surface to the user.
+  /// [bgLocationDeniedMessage] is shown when background location permission is
+  /// not granted; pass a localised string from the calling widget.
   Future<void> startRecording({
     required void Function(String message) onError,
+    required String bgLocationDeniedMessage,
   }) async {
     _lastError = null;
     try {
       final bgGranted = await ForegroundTrackingService.requestPermissions();
       if (!bgGranted) {
-        onError(
-          'For screen-off tracking, allow location access "All the time" in Settings.',
-        );
+        onError(bgLocationDeniedMessage);
       }
       await ForegroundTrackingService.start();
       await ForegroundTrackingService.setWakeLock(true);

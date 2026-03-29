@@ -28,6 +28,12 @@ linter:
     prefer_const_declarations: true
     avoid_unnecessary_containers: true
     sized_box_for_whitespace: true
+    always_declare_return_types: true
+    avoid_dynamic_calls: true
+    cancel_subscriptions: true
+    close_sinks: true
+    use_super_parameters: true
+    prefer_final_in_for_each: true
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

@@ -60,6 +60,15 @@
   "logSaveToTrailsTooltip": "Guardar em Trilhos",
 
   "detailNoRoute": "Sem rota registada",
+  "detailLabelDate": "Data",
+  "detailLabelStart": "Início",
+  "detailLabelEnd": "Fim",
+  "detailLabelDuration": "Duração",
+  "detailLabelDistance": "Distância",
+  "detailLabelGpsPoints": "Pontos GPS",
+  "detailLabelNoGpsPoints": "Sem pontos GPS",
+  "detailLabelSteps": "Passos",
+  "detailLabelCalories": "Calorias",
 
   "trailsAppBarTitle": "Navegador de Trilhos",
   "trailsSelectionCount": "{count} selecionados",
@@ -182,5 +191,20 @@
   "commonDelete": "Eliminar",
   "commonClose": "Fechar",
   "commonOk": "OK",
-  "commonErrorStopCurrentHike": "Pare a caminhada atual antes de iniciar uma nova."
+  "commonErrorStopCurrentHike": "Pare a caminhada atual antes de iniciar uma nova.",
+
+  "trackBgLocationDenied": "Para rastreio com ecrã desligado, permita o acesso à localização \"Sempre\" nas Definições.",
+
+  "trailsImportSkipped": "{count} ignorado(s): formato não suportado",
+  "@trailsImportSkipped": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "trailsImportFailed": "{count} falhou ao analisar",
+  "@trailsImportFailed": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  }
 }

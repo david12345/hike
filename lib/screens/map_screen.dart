@@ -33,6 +33,15 @@ class _MapScreenState extends State<MapScreen> {
   /// GPS event instead of inside [build] / [ListenableBuilder].
   List<List<LatLng>> _segments = [];
 
+  /// Pre-built [Polyline] list derived from [_segments]; rebuilt only when
+  /// [_segments] changes so the [PolylineLayer] avoids re-allocating on every
+  /// builder invocation.
+  List<Polyline> _polylines = [];
+
+  /// Tracks [TrackingState.points.length] after the last [_onTrackingChanged]
+  /// call so incremental segment updates can avoid a full O(N) rescan.
+  int _lastPointCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -51,9 +60,51 @@ class _MapScreenState extends State<MapScreen> {
     if (_followLocation && pos != null) {
       _mapController.move(pos, _mapController.camera.zoom);
     }
-    // Recompute segments outside of build() so the ListenableBuilder only
-    // reads the already-computed list.
-    _segments = segmentsFromPoints(tracking.points);
+    // Incrementally update [_segments] to avoid an O(N) full rescan on every
+    // GPS fix.  The fast path handles the common case where exactly one new
+    // point was appended to [tracking.points].  All other cases (reset,
+    // initial population, or multi-point jump) fall back to the full rebuild.
+    final points = tracking.points;
+    final newCount = points.length;
+
+    if (newCount == 0) {
+      // Recording was stopped / reset.
+      _segments = [];
+    } else if (_lastPointCount > 0 && newCount == _lastPointCount + 1) {
+      // Exactly one new point — fast incremental path (O(1)).
+      final latest = points.last;
+      if (latest.latitude.isNaN) {
+        // NaN sentinel: start a fresh segment.
+        _segments = List<List<LatLng>>.from(_segments)..add([]);
+      } else if (_segments.isEmpty) {
+        _segments = [
+          [latest]
+        ];
+      } else {
+        // Append to the current (last) segment in-place on a shallow copy.
+        final updated = List<List<LatLng>>.from(_segments);
+        updated[updated.length - 1] = List<LatLng>.from(updated.last)
+          ..add(latest);
+        _segments = updated;
+      }
+    } else {
+      // Reset, new recording, or multi-point jump — full rebuild.
+      _segments = segmentsFromPoints(points);
+    }
+    _lastPointCount = newCount;
+
+    // Rebuild [_polylines] from the (possibly updated) [_segments].  Segments
+    // with fewer than 2 points are excluded to avoid flutter_map assertions.
+    _polylines = _segments
+        .where((seg) => seg.length >= 2)
+        .map(
+          (seg) => Polyline(
+            points: seg,
+            color: Colors.deepOrange,
+            strokeWidth: 4.0,
+          ),
+        )
+        .toList();
   }
 
   @override
@@ -115,17 +166,7 @@ class _MapScreenState extends State<MapScreen> {
                         ),
                       if (tracking.isRecording &&
                           tracking.points.length > 1)
-                        PolylineLayer(
-                          polylines: _segments
-                              .map(
-                                (seg) => Polyline(
-                                  points: seg,
-                                  color: Colors.deepOrange,
-                                  strokeWidth: 4.0,
-                                ),
-                              )
-                              .toList(),
-                        ),
+                        PolylineLayer(polylines: _polylines),
                       if (pos != null)
                         MarkerLayer(
                           markers: [

@@ -344,6 +344,60 @@ abstract class AppLocalizations {
   /// **'No route recorded'**
   String get detailNoRoute;
 
+  /// No description provided for @detailLabelDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get detailLabelDate;
+
+  /// No description provided for @detailLabelStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get detailLabelStart;
+
+  /// No description provided for @detailLabelEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get detailLabelEnd;
+
+  /// No description provided for @detailLabelDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get detailLabelDuration;
+
+  /// No description provided for @detailLabelDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get detailLabelDistance;
+
+  /// No description provided for @detailLabelGpsPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS Points'**
+  String get detailLabelGpsPoints;
+
+  /// No description provided for @detailLabelNoGpsPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'No GPS points'**
+  String get detailLabelNoGpsPoints;
+
+  /// No description provided for @detailLabelSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get detailLabelSteps;
+
+  /// No description provided for @detailLabelCalories.
+  ///
+  /// In en, this message translates to:
+  /// **'Calories'**
+  String get detailLabelCalories;
+
   /// No description provided for @trailsAppBarTitle.
   ///
   /// In en, this message translates to:
@@ -775,6 +829,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop the current hike before starting a new one.'**
   String get commonErrorStopCurrentHike;
+
+  /// No description provided for @trackBgLocationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'For screen-off tracking, allow location access \"All the time\" in Settings.'**
+  String get trackBgLocationDenied;
+
+  /// No description provided for @trailsImportSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} skipped: unsupported format'**
+  String trailsImportSkipped(int count);
+
+  /// No description provided for @trailsImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} failed to parse'**
+  String trailsImportFailed(int count);
 }
 
 class _AppLocalizationsDelegate

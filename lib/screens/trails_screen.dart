@@ -122,10 +122,10 @@ class _TrailsScreenState extends State<TrailsScreen> {
           l10n.trailsImportSuccess(count, filesProcessed),
         );
         if (filesSkipped > 0) {
-          buf.write(' ($filesSkipped skipped: unsupported format)');
+          buf.write(' (${l10n.trailsImportSkipped(filesSkipped)})');
         }
         if (filesFailed > 0) {
-          buf.write(' ($filesFailed failed to parse)');
+          buf.write(' (${l10n.trailsImportFailed(filesFailed)})');
         }
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(buf.toString())));
@@ -756,7 +756,6 @@ class _TrailPreviewPanelState extends State<_TrailPreviewPanel> {
           child: Stack(
             children: [
               FlutterMap(
-                key: ValueKey(widget.trail.osmId),
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: _centroid,

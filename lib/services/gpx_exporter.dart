@@ -23,10 +23,7 @@ class GpxExporter {
     buffer.writeln('  <trk>');
     buffer.writeln('    <name>${_escapeXml(trail.name)}</name>');
     buffer.writeln('    <trkseg>');
-    for (var i = 0; i < trail.latitudes.length; i++) {
-      buffer.writeln(
-          '      <trkpt lat="${trail.latitudes[i]}" lon="${trail.longitudes[i]}"/>');
-    }
+    _writeTrackPoints(buffer, trail.latitudes, trail.longitudes);
     buffer.writeln('    </trkseg>');
     buffer.writeln('  </trk>');
     buffer.write('</gpx>');
@@ -34,6 +31,9 @@ class GpxExporter {
   }
 
   /// Returns a GPX 1.1 XML string for [hike].
+  ///
+  /// NaN gap-marker coordinates inserted by the drift/gap-detection subsystems
+  /// are silently skipped — they are invalid in the GPX 1.1 schema.
   String hikeRecordToGpxString(HikeRecord hike) {
     final buffer = StringBuffer();
     buffer.writeln('<?xml version="1.0" encoding="UTF-8"?>');
@@ -42,14 +42,26 @@ class GpxExporter {
     buffer.writeln('  <trk>');
     buffer.writeln('    <name>${_escapeXml(hike.name)}</name>');
     buffer.writeln('    <trkseg>');
-    for (var i = 0; i < hike.latitudes.length; i++) {
-      buffer.writeln(
-          '      <trkpt lat="${hike.latitudes[i]}" lon="${hike.longitudes[i]}"/>');
-    }
+    _writeTrackPoints(buffer, hike.latitudes, hike.longitudes);
     buffer.writeln('    </trkseg>');
     buffer.writeln('  </trk>');
     buffer.write('</gpx>');
     return buffer.toString();
+  }
+
+  /// Writes `<trkpt>` elements into [buf] for each (lat, lon) pair.
+  ///
+  /// Pairs where either coordinate is NaN (used as gap-markers) are skipped so
+  /// the output is always valid GPX 1.1 XML.
+  static void _writeTrackPoints(
+      StringBuffer buf, List<double> lats, List<double> lons) {
+    final count = lats.length < lons.length ? lats.length : lons.length;
+    for (var i = 0; i < count; i++) {
+      final lat = lats[i];
+      final lon = lons[i];
+      if (lat.isNaN || lon.isNaN) continue;
+      buf.writeln('      <trkpt lat="$lat" lon="$lon"/>');
+    }
   }
 
   /// Writes each trail in [trails] as a .gpx file under a temporary directory.

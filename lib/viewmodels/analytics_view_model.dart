@@ -45,6 +45,11 @@ class AnalyticsViewModel extends ChangeNotifier {
   bool _prefsLoaded = false;
   String? _errorMessage;
 
+  /// Number of hikes that pass the current filter; updated at the start of
+  /// every [_triggerRecompute] call so the screen never calls [HikeService.getAll].
+  int _filteredCount = 0;
+  int _totalCount = 0;
+
   /// The currently active preset filter; null when a custom range is active.
   AnalyticsFilterPreset? get activePreset => _activePreset;
 
@@ -62,6 +67,12 @@ class AnalyticsViewModel extends ChangeNotifier {
 
   /// Non-null when the most recent compute failed.
   String? get errorMessage => _errorMessage;
+
+  /// True when no hikes match the current filter.
+  bool get filteredIsEmpty => _filteredCount == 0;
+
+  /// True when the user has no hikes at all (ignoring filters).
+  bool get hasAnyHikes => _totalCount > 0;
 
   // ---------------------------------------------------------------------------
   // Private fields
@@ -164,6 +175,8 @@ class AnalyticsViewModel extends ChangeNotifier {
     final allHikes = HikeService.getAll();
     final filtered = applyFilter(allHikes);
 
+    _filteredCount = filtered.length;
+    _totalCount = allHikes.length;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();

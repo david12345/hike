@@ -56,12 +56,6 @@ class TilePreferenceService extends ChangeNotifier {
   /// The currently active tile mode.
   TileMode get mode => _mode;
 
-  /// Whether the topo tile layer is currently active.
-  bool get useTopo => _mode == TileMode.topo;
-
-  /// Whether the satellite tile layer is currently active.
-  bool get useSatellite => _mode == TileMode.satellite;
-
   /// Returns the tile URL template for the current mode.
   String get tileUrl {
     switch (_mode) {

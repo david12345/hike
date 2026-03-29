@@ -159,7 +159,11 @@ class _HomePageState extends State<HomePage> {
     }
 
     TrackingState.instance.setGuideTrail(trail);
-    await _recordingController.startRecording(onError: _showError);
+    await _recordingController.startRecording(
+      onError: _showError,
+      bgLocationDeniedMessage:
+          AppLocalizations.of(context).trackBgLocationDenied,
+    );
     if (mounted) {
       _onTabChanged(0);
     }

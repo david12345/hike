@@ -138,6 +138,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailNoRoute => 'No route recorded';
 
   @override
+  String get detailLabelDate => 'Date';
+
+  @override
+  String get detailLabelStart => 'Start';
+
+  @override
+  String get detailLabelEnd => 'End';
+
+  @override
+  String get detailLabelDuration => 'Duration';
+
+  @override
+  String get detailLabelDistance => 'Distance';
+
+  @override
+  String get detailLabelGpsPoints => 'GPS Points';
+
+  @override
+  String get detailLabelNoGpsPoints => 'No GPS points';
+
+  @override
+  String get detailLabelSteps => 'Steps';
+
+  @override
+  String get detailLabelCalories => 'Calories';
+
+  @override
   String get trailsAppBarTitle => 'Trail Browser';
 
   @override
@@ -374,4 +401,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get commonErrorStopCurrentHike =>
       'Stop the current hike before starting a new one.';
+
+  @override
+  String get trackBgLocationDenied =>
+      'For screen-off tracking, allow location access \"All the time\" in Settings.';
+
+  @override
+  String trailsImportSkipped(int count) {
+    return '$count skipped: unsupported format';
+  }
+
+  @override
+  String trailsImportFailed(int count) {
+    return '$count failed to parse';
+  }
 }

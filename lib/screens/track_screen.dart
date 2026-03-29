@@ -37,7 +37,11 @@ class _TrackScreenState extends State<TrackScreen> {
   }
 
   Future<void> _startHike() async {
-    await _controller.startRecording(onError: _showError);
+    await _controller.startRecording(
+      onError: _showError,
+      bgLocationDeniedMessage:
+          AppLocalizations.of(context).trackBgLocationDenied,
+    );
   }
 
   Future<void> _stopHike() async {

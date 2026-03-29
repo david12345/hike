@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../utils/constants.dart';
 
 class LocationService {
@@ -16,14 +15,6 @@ class LocationService {
     }
     if (permission == LocationPermission.deniedForever) return false;
     return true;
-  }
-
-  static Future<Position?> getCurrentPosition() async {
-    final ok = await requestPermission();
-    if (!ok) return null;
-    return await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-    );
   }
 
   static Stream<Position> trackPosition() {
@@ -93,13 +84,6 @@ class LocationService {
         distanceFilter: 50,
       ),
     );
-  }
-
-  /// Request background location permission (Android 10+).
-  /// Must be called AFTER foreground location permission is granted.
-  static Future<bool> requestBackgroundPermission() async {
-    final status = await Permission.locationAlways.request();
-    return status == PermissionStatus.granted;
   }
 
   static double distanceBetween(

@@ -23,8 +23,14 @@ class TrailMapScreen extends StatefulWidget {
 }
 
 class _TrailMapScreenState extends State<TrailMapScreen> {
-  /// Computes the bounding box from the trail geometry.
-  LatLngBounds get _bounds => boundsForPoints(widget.trail.geometry);
+  /// Bounding box computed once in [initState] — trail geometry is immutable.
+  late final LatLngBounds _bounds;
+
+  @override
+  void initState() {
+    super.initState();
+    _bounds = boundsForPoints(widget.trail.geometry);
+  }
 
   @override
   Widget build(BuildContext context) {
