@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.0.24+25 |
+| Version | 1.0.25+26 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -301,6 +301,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.0.22 | Android fixes: WAKE_LOCK permission, foregroundNotificationConfig, Auto minCarApiLevel, attachBaseContext restored, background file read, BROWSABLE intent filters |
 | v1.0.23 | Full analysis fixes: mounted check, GPX NaN export, HikeDetail localisation, 80 pure-Dart tests, performance quick wins (O(1) segment updates, late final bounds, Polyline cache, AnalyticsViewModel isEmpty), dead code removal, lint rules strengthened, error strings localised |
 | v1.0.24 | Android Auto fixes: shared Flutter engine via FlutterEngineCache, minCarApiLevel 1→2, ACCESS_SURFACE permission, category NAVIGATION→MAPS, currentInstance identity check on reconnect, lockCanvas fallback, AutoDataBridgeService error logging |
+| v1.0.25 | Fix localisation regression: remove attachBaseContext Locale.ENGLISH override from MainActivity so pt/en device-locale routing works correctly |
 
 ---
 

@@ -1,8 +1,6 @@
 package com.dealmeida.hike
 
-import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
@@ -14,7 +12,6 @@ import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Locale
 
 class MainActivity : FlutterActivity() {
 
@@ -26,14 +23,6 @@ class MainActivity : FlutterActivity() {
 
     // Stores file data from a cold-start intent until Dart calls getInitialFile().
     private var pendingFile: HashMap<String, Any>? = null
-
-    override fun attachBaseContext(newBase: Context) {
-        val locale = Locale.ENGLISH
-        Locale.setDefault(locale)
-        val config = newBase.resources.configuration
-        config.setLocale(locale)
-        super.attachBaseContext(newBase.createConfigurationContext(config))
-    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
