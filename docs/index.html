@@ -383,8 +383,8 @@
            onerror="this.style.display='none'">
       <h1>Hike</h1>
     </div>
-    <p class="tagline">Essential tools for hiking</p>
-    <p class="version-badge" id="app-version">v1.0.6</p>
+    <p class="tagline" data-i18n="tagline">Essential tools for hiking</p>
+    <p class="version-badge" id="app-version">v1.0.20</p>
     <p class="version-badge"><a href="mailto:david.a.ferreira@protonmail.com" style="color:rgba(255,255,255,0.75);text-decoration:none;">david.a.ferreira@protonmail.com</a></p>
     <a class="btn-download"
        href="https://github.com/david12345/hike/releases/latest/download/hike.apk"
@@ -392,115 +392,115 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M5 20h14v-2H5v2zm7-18l-5 5h3v6h4v-6h3L12 2z"/>
       </svg>
-      Download APK
+      <span data-i18n="download-btn">Download APK</span>
     </a>
     <div class="badge-row">
-      <span class="badge">Free</span>
-      <span class="badge">No account required</span>
-      <span class="badge">No ads</span>
-      <span class="badge">Open Source</span>
+      <span class="badge" data-i18n="badge-free">Free</span>
+      <span class="badge" data-i18n="badge-no-account">No account required</span>
+      <span class="badge" data-i18n="badge-no-ads">No ads</span>
+      <span class="badge" data-i18n="badge-open-source">Open Source</span>
     </div>
   </header>
 
   <!-- FEATURES -->
   <section aria-labelledby="features-heading">
-    <h2 id="features-heading">What's inside</h2>
+    <h2 id="features-heading" data-i18n="features-heading">What's inside</h2>
     <div class="features-grid">
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">📍</span>
-        <h3>GPS Tracking</h3>
-        <p>Record your route with high-accuracy GPS. See real-time distance, elapsed time, altitude, and point count as you hike.</p>
+        <h3 data-i18n="gps-title">GPS Tracking</h3>
+        <p data-i18n="gps-desc">Record your route with high-accuracy GPS. See real-time distance, elapsed time, altitude, and point count as you hike.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">🗺</span>
-        <h3>Live Map</h3>
-        <p>Watch your position update on an OpenStreetMap, OpenTopoMap, or satellite imagery base layer. Route polyline drawn in real time.</p>
+        <h3 data-i18n="map-title">Live Map</h3>
+        <p data-i18n="map-desc">Watch your position update on an OpenStreetMap, OpenTopoMap, or satellite imagery base layer. Route polyline drawn in real time.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">📶</span>
-        <h3>Offline Tiles</h3>
-        <p>Map tiles are cached to disk for 30 days so you can follow your route without a mobile data connection.</p>
+        <h3 data-i18n="offline-title">Offline Tiles</h3>
+        <p data-i18n="offline-desc">Map tiles are cached to disk for 30 days so you can follow your route without a mobile data connection.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">🧭</span>
-        <h3>Compass</h3>
-        <p>Live compass rose with degree readout at the center. Knows your cardinal direction at a glance.</p>
+        <h3 data-i18n="compass-title">Compass</h3>
+        <p data-i18n="compass-desc">Live compass rose with degree readout at the center. Knows your cardinal direction at a glance.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">⛅</span>
-        <h3>Weather</h3>
-        <p>Current temperature, weather description, and air pressure pulled from the Open-Meteo API — no API key needed.</p>
+        <h3 data-i18n="weather-title">Weather</h3>
+        <p data-i18n="weather-desc">Current temperature, weather description, and air pressure pulled from the Open-Meteo API — no API key needed.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">📂</span>
-        <h3>Trail Import</h3>
-        <p>Import GPX or KML trails from any source. View them on the map, export them back, or follow them on a guided hike.</p>
+        <h3 data-i18n="trail-title">Trail Import</h3>
+        <p data-i18n="trail-desc">Import GPX or KML trails from any source. View them on the map, export them back, or follow them on a guided hike.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">📜</span>
-        <h3>Hike Log</h3>
-        <p>Every completed hike is saved locally. Tap any entry to replay the full route on an interactive detail map.</p>
+        <h3 data-i18n="log-title">Hike Log</h3>
+        <p data-i18n="log-desc">Every completed hike is saved locally. Tap any entry to replay the full route on an interactive detail map.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">🔋</span>
-        <h3>Battery Friendly</h3>
-        <p>Single GPS stream with tiered accuracy — high while recording, ambient while just browsing. Background service keeps tracking even when the screen is off.</p>
+        <h3 data-i18n="battery-title">Battery Friendly</h3>
+        <p data-i18n="battery-desc">Single GPS stream with tiered accuracy — high while recording, ambient while just browsing. Background service keeps tracking even when the screen is off.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">🛰️</span>
-        <h3>Satellite View</h3>
-        <p>Switch any map to satellite imagery (Esri World Imagery) with one tap. Cycle between standard, topographic, and satellite layers on every map screen.</p>
+        <h3 data-i18n="satellite-title">Satellite View</h3>
+        <p data-i18n="satellite-desc">Switch any map to satellite imagery (Esri World Imagery) with one tap. Cycle between standard, topographic, and satellite layers on every map screen.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">🚗</span>
-        <h3>Android Auto</h3>
-        <p>When Android Auto is connected, Hike shows a live map, compass heading, latitude, longitude, and altitude on your car's display — no phone required.</p>
+        <h3 data-i18n="auto-title">Android Auto</h3>
+        <p data-i18n="auto-desc">When Android Auto is connected, Hike shows a live map, compass heading, latitude, longitude, and altitude on your car's display — no phone required.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">📐</span>
-        <h3>Accurate Path Recording</h3>
-        <p>Heading-change-triggered GPS sampling faithfully captures roundabouts and switchbacks — not just straight-line displacement. Tighter 1 m / 2 s sampling for denser curves.</p>
+        <h3 data-i18n="path-title">Accurate Path Recording</h3>
+        <p data-i18n="path-desc">Heading-change-triggered GPS sampling faithfully captures roundabouts and switchbacks — not just straight-line displacement. Tighter 1 m / 2 s sampling for denser curves.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">📊</span>
-        <h3>Hike Analytics</h3>
-        <p>The Stats tab shows charts and metrics across all your recorded hikes: distance over time, hikes per month, distance distribution, personal bests, and active-day streaks — all filterable by date range.</p>
+        <h3 data-i18n="analytics-title">Hike Analytics</h3>
+        <p data-i18n="analytics-desc">The Stats tab shows charts and metrics across all your recorded hikes: distance over time, hikes per month, distance distribution, personal bests, and active-day streaks — all filterable by date range.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">↕️</span>
-        <h3>Sort &amp; Filter</h3>
-        <p>Sort your hike log by date (newest or oldest first) and your imported trails by name (A → Z or Z → A). Preferences are remembered across sessions.</p>
+        <h3 data-i18n="sort-title">Sort &amp; Filter</h3>
+        <p data-i18n="sort-desc">Sort your hike log by date (newest or oldest first) and your imported trails by name (A → Z or Z → A). Preferences are remembered across sessions.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">🌍</span>
-        <h3>Portuguese &amp; English</h3>
-        <p>The app automatically uses Portuguese (pt) or English based on your device language — no setting required. Dates, numbers, and charts adapt to your locale too.</p>
+        <h3 data-i18n="locale-title">Portuguese &amp; English</h3>
+        <p data-i18n="locale-desc">The app automatically uses Portuguese (pt) or English based on your device language — no setting required. Dates, numbers, and charts adapt to your locale too.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">⏸️</span>
-        <h3>Pause &amp; Resume</h3>
-        <p>Take a break without stopping your hike. The Pause button freezes the timer and GPS collection; Resume picks up exactly where you left off. The foreground notification shows "Paused" while you rest.</p>
+        <h3 data-i18n="pause-title">Pause &amp; Resume</h3>
+        <p data-i18n="pause-desc">Take a break without stopping your hike. The Pause button freezes the timer and GPS collection; Resume picks up exactly where you left off. The foreground notification shows "Paused" while you rest.</p>
       </div>
 
       <div class="feature-card">
         <span class="icon" aria-hidden="true">🎯</span>
-        <h3>GPS Drift Filter</h3>
-        <p>Standing still no longer inflates your distance. A sliding-window centroid filter suppresses jitter fixes while you are stationary, keeping your route line clean and your distance accurate.</p>
+        <h3 data-i18n="drift-title">GPS Drift Filter</h3>
+        <p data-i18n="drift-desc">Standing still no longer inflates your distance. A sliding-window centroid filter suppresses jitter fixes while you are stationary, keeping your route line clean and your distance accurate.</p>
       </div>
 
     </div>
@@ -509,67 +509,62 @@
   <!-- SCREENSHOTS -->
   <div class="screenshots-section">
     <div class="screenshots-section-inner">
-      <h2>Screenshots</h2>
+      <h2 data-i18n="screenshots-heading">Screenshots</h2>
       <div class="screenshots-grid">
-        <img src="screenshots/Dashboard.jpg" alt="Track screen with GPS, compass and weather">
-        <img src="screenshots/HikingMap.jpg" alt="Live map with recorded route">
-        <img src="screenshots/TrailBrowser.jpg" alt="Trail browser with imported GPX trails">
+        <img src="screenshots/Dashboard.jpg" data-i18n-alt="screenshot1-alt" alt="Track screen with GPS, compass and weather">
+        <img src="screenshots/HikingMap.jpg" data-i18n-alt="screenshot2-alt" alt="Live map with recorded route">
+        <img src="screenshots/TrailBrowser.jpg" data-i18n-alt="screenshot3-alt" alt="Trail browser with imported GPX trails">
       </div>
     </div>
   </div>
 
   <!-- HOW IT WORKS -->
   <section aria-labelledby="howto-heading">
-    <h2 id="howto-heading">How it works</h2>
+    <h2 id="howto-heading" data-i18n="howto-heading">How it works</h2>
     <div class="steps">
       <div class="step">
-        <h3>Install the APK</h3>
-        <p>Download the APK and allow installation from unknown sources in your Android settings (Settings → Security → Install unknown apps).</p>
+        <h3 data-i18n="step1-title">Install the APK</h3>
+        <p data-i18n="step1-desc">Download the APK and allow installation from unknown sources in your Android settings (Settings → Security → Install unknown apps).</p>
       </div>
       <div class="step">
-        <h3>Grant location permission</h3>
-        <p>Hike asks for location permission on first launch. Choose "Allow all the time" to enable background tracking while the screen is off.</p>
+        <h3 data-i18n="step2-title">Grant location permission</h3>
+        <p data-i18n="step2-desc">Hike asks for location permission on first launch. Choose "Allow all the time" to enable background tracking while the screen is off.</p>
       </div>
       <div class="step">
-        <h3>Head outside and hit Record</h3>
-        <p>Tap the record button on the Track tab. Your route is saved automatically with checkpoint saves every 30 seconds — so nothing is lost even if the app crashes.</p>
+        <h3 data-i18n="step3-title">Head outside and hit Record</h3>
+        <p data-i18n="step3-desc">Tap the record button on the Track tab. Your route is saved automatically with checkpoint saves every 30 seconds — so nothing is lost even if the app crashes.</p>
       </div>
       <div class="step">
-        <h3>Review your hikes</h3>
-        <p>Open the Log tab to see all past hikes. Tap any entry to view the route on a full-screen map with statistics.</p>
+        <h3 data-i18n="step4-title">Review your hikes</h3>
+        <p data-i18n="step4-desc">Open the Log tab to see all past hikes. Tap any entry to view the route on a full-screen map with statistics.</p>
       </div>
       <div class="step">
-        <h3>Explore your progress</h3>
-        <p>Switch to the Stats tab for charts and metrics across all your hikes. Filter by date range to see a specific period, track personal bests, and check your active-day streak.</p>
+        <h3 data-i18n="step5-title">Explore your progress</h3>
+        <p data-i18n="step5-desc">Switch to the Stats tab for charts and metrics across all your hikes. Filter by date range to see a specific period, track personal bests, and check your active-day streak.</p>
       </div>
     </div>
   </section>
 
   <!-- OPEN SOURCE -->
   <section aria-labelledby="oss-heading" style="padding-top: 0;">
-    <h2 id="oss-heading" style="margin-bottom: 24px;">Free &amp; Open Source</h2>
+    <h2 id="oss-heading" data-i18n="oss-heading" style="margin-bottom: 24px;">Free &amp; Open Source</h2>
     <div class="oss-section">
-      <h3>Built with Flutter, no subscriptions, no tracking</h3>
-      <p>
-        Hike is free, has no ads, requires no account, and collects no personal data.
-        All hike records are stored only on your device.
-        The source code is available on
-        <a href="https://github.com/david12345/hike" target="_blank" rel="noopener">GitHub</a>.
-      </p>
+      <h3 data-i18n="oss-subtitle">Built with Flutter, no subscriptions, no tracking</h3>
+      <p data-i18n-html="oss-desc">Hike is free, has no ads, requires no account, and collects no personal data. All hike records are stored only on your device. The source code is available on <a href="https://github.com/david12345/hike" target="_blank" rel="noopener">GitHub</a>.</p>
     </div>
   </section>
 
   <!-- DOWNLOAD CTA -->
   <div class="cta-section">
-    <h2>Ready to hit the trail?</h2>
-    <p>Android 6.0 (API 23) or later required.</p>
+    <h2 data-i18n="cta-heading">Ready to hit the trail?</h2>
+    <p data-i18n="cta-desc">Android 6.0 (API 23) or later required.</p>
     <a class="btn-download-white"
        href="https://github.com/david12345/hike/releases/latest/download/hike.apk"
        download>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M5 20h14v-2H5v2zm7-18l-5 5h3v6h4v-6h3L12 2z"/>
       </svg>
-      Download APK
+      <span data-i18n="download-btn">Download APK</span>
     </a>
   </div>
 
@@ -578,13 +573,173 @@
     <div class="footer-links">
       <a href="https://github.com/david12345/hike" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/david12345/hike/releases" target="_blank" rel="noopener">Releases</a>
-      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="privacy-policy.html" data-i18n="footer-privacy">Privacy Policy</a>
     </div>
-    <p>Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> &middot; Satellite tiles &copy; Esri</p>
-    <p style="margin-top:6px;">Weather data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (open-source weather API)</p>
+    <p data-i18n-html="footer-map">Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> &middot; Satellite tiles &copy; Esri</p>
+    <p style="margin-top:6px;" data-i18n-html="footer-weather">Weather data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (open-source weather API)</p>
   </footer>
 
   <script>
+    /* ─── Translations ─────────────────────────────────────── */
+    const translations = {
+      en: {
+        'tagline':           'Essential tools for hiking',
+        'download-btn':      'Download APK',
+        'badge-free':        'Free',
+        'badge-no-account':  'No account required',
+        'badge-no-ads':      'No ads',
+        'badge-open-source': 'Open Source',
+        'features-heading':  "What's inside",
+        'gps-title':         'GPS Tracking',
+        'gps-desc':          'Record your route with high-accuracy GPS. See real-time distance, elapsed time, altitude, and point count as you hike.',
+        'map-title':         'Live Map',
+        'map-desc':          'Watch your position update on an OpenStreetMap, OpenTopoMap, or satellite imagery base layer. Route polyline drawn in real time.',
+        'offline-title':     'Offline Tiles',
+        'offline-desc':      'Map tiles are cached to disk for 30 days so you can follow your route without a mobile data connection.',
+        'compass-title':     'Compass',
+        'compass-desc':      'Live compass rose with degree readout at the center. Knows your cardinal direction at a glance.',
+        'weather-title':     'Weather',
+        'weather-desc':      'Current temperature, weather description, and air pressure pulled from the Open-Meteo API — no API key needed.',
+        'trail-title':       'Trail Import',
+        'trail-desc':        'Import GPX or KML trails from any source. View them on the map, export them back, or follow them on a guided hike.',
+        'log-title':         'Hike Log',
+        'log-desc':          'Every completed hike is saved locally. Tap any entry to replay the full route on an interactive detail map.',
+        'battery-title':     'Battery Friendly',
+        'battery-desc':      'Single GPS stream with tiered accuracy — high while recording, ambient while just browsing. Background service keeps tracking even when the screen is off.',
+        'satellite-title':   'Satellite View',
+        'satellite-desc':    'Switch any map to satellite imagery (Esri World Imagery) with one tap. Cycle between standard, topographic, and satellite layers on every map screen.',
+        'auto-title':        'Android Auto',
+        'auto-desc':         "When Android Auto is connected, Hike shows a live map, compass heading, latitude, longitude, and altitude on your car's display — no phone required.",
+        'path-title':        'Accurate Path Recording',
+        'path-desc':         'Heading-change-triggered GPS sampling faithfully captures roundabouts and switchbacks — not just straight-line displacement. Tighter 1 m / 2 s sampling for denser curves.',
+        'analytics-title':   'Hike Analytics',
+        'analytics-desc':    'The Stats tab shows charts and metrics across all your recorded hikes: distance over time, hikes per month, distance distribution, personal bests, and active-day streaks — all filterable by date range.',
+        'sort-title':        'Sort & Filter',
+        'sort-desc':         'Sort your hike log by date (newest or oldest first) and your imported trails by name (A → Z or Z → A). Preferences are remembered across sessions.',
+        'locale-title':      'Portuguese & English',
+        'locale-desc':       'The app automatically uses Portuguese (pt) or English based on your device language — no setting required. Dates, numbers, and charts adapt to your locale too.',
+        'pause-title':       'Pause & Resume',
+        'pause-desc':        'Take a break without stopping your hike. The Pause button freezes the timer and GPS collection; Resume picks up exactly where you left off. The foreground notification shows "Paused" while you rest.',
+        'drift-title':       'GPS Drift Filter',
+        'drift-desc':        'Standing still no longer inflates your distance. A sliding-window centroid filter suppresses jitter fixes while you are stationary, keeping your route line clean and your distance accurate.',
+        'screenshots-heading': 'Screenshots',
+        'screenshot1-alt':   'Track screen with GPS, compass and weather',
+        'screenshot2-alt':   'Live map with recorded route',
+        'screenshot3-alt':   'Trail browser with imported GPX trails',
+        'howto-heading':     'How it works',
+        'step1-title':       'Install the APK',
+        'step1-desc':        'Download the APK and allow installation from unknown sources in your Android settings (Settings → Security → Install unknown apps).',
+        'step2-title':       'Grant location permission',
+        'step2-desc':        'Hike asks for location permission on first launch. Choose "Allow all the time" to enable background tracking while the screen is off.',
+        'step3-title':       'Head outside and hit Record',
+        'step3-desc':        'Tap the record button on the Track tab. Your route is saved automatically with checkpoint saves every 30 seconds — so nothing is lost even if the app crashes.',
+        'step4-title':       'Review your hikes',
+        'step4-desc':        'Open the Log tab to see all past hikes. Tap any entry to view the route on a full-screen map with statistics.',
+        'step5-title':       'Explore your progress',
+        'step5-desc':        'Switch to the Stats tab for charts and metrics across all your hikes. Filter by date range to see a specific period, track personal bests, and check your active-day streak.',
+        'oss-heading':       'Free & Open Source',
+        'oss-subtitle':      'Built with Flutter, no subscriptions, no tracking',
+        'oss-desc':          'Hike is free, has no ads, requires no account, and collects no personal data. All hike records are stored only on your device. The source code is available on <a href="https://github.com/david12345/hike" target="_blank" rel="noopener">GitHub</a>.',
+        'cta-heading':       'Ready to hit the trail?',
+        'cta-desc':          'Android 6.0 (API 23) or later required.',
+        'footer-privacy':    'Privacy Policy',
+        'footer-map':        'Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> &middot; Satellite tiles &copy; Esri',
+        'footer-weather':    'Weather data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (open-source weather API)',
+      },
+      pt: {
+        'tagline':           'Ferramentas essenciais para caminhadas',
+        'download-btn':      'Transferir APK',
+        'badge-free':        'Grátis',
+        'badge-no-account':  'Sem conta necessária',
+        'badge-no-ads':      'Sem anúncios',
+        'badge-open-source': 'Código Aberto',
+        'features-heading':  'O que inclui',
+        'gps-title':         'Rastreamento GPS',
+        'gps-desc':          'Grave o seu percurso com GPS de alta precisão. Veja em tempo real a distância, o tempo decorrido, a altitude e o número de pontos.',
+        'map-title':         'Mapa em Tempo Real',
+        'map-desc':          'Acompanhe a sua posição no mapa OpenStreetMap, OpenTopoMap ou imagem de satélite. O percurso é desenhado em tempo real.',
+        'offline-title':     'Mapa Offline',
+        'offline-desc':      'Os mosaicos do mapa são guardados em disco por 30 dias para poder seguir o percurso sem ligação de dados móveis.',
+        'compass-title':     'Bússola',
+        'compass-desc':      'Rosa dos ventos em tempo real com graus no centro. Saiba sempre a sua direção cardinal de relance.',
+        'weather-title':     'Meteorologia',
+        'weather-desc':      'Temperatura atual, descrição do tempo e pressão atmosférica via Open-Meteo — sem chave de API necessária.',
+        'trail-title':       'Importar Trilhos',
+        'trail-desc':        'Importe trilhos GPX ou KML de qualquer fonte. Visualize-os no mapa, exporte-os ou siga-os numa caminhada guiada.',
+        'log-title':         'Registo de Caminhadas',
+        'log-desc':          'Todas as caminhadas concluídas são guardadas localmente. Toque em qualquer entrada para rever o percurso completo num mapa interativo.',
+        'battery-title':     'Poupança de Bateria',
+        'battery-desc':      'Fluxo GPS único com precisão escalonada — alta durante a gravação, ambiente ao navegar. O serviço em segundo plano mantém o rastreamento mesmo com o ecrã desligado.',
+        'satellite-title':   'Vista de Satélite',
+        'satellite-desc':    'Mude qualquer mapa para imagem de satélite (Esri World Imagery) com um toque. Alterne entre camadas padrão, topográfica e satélite em todos os ecrãs de mapa.',
+        'auto-title':        'Android Auto',
+        'auto-desc':         'Quando o Android Auto está ligado, o Hike mostra mapa em tempo real, direção da bússola, latitude, longitude e altitude no ecrã do carro — sem necessidade do telemóvel.',
+        'path-title':        'Gravação Precisa de Percurso',
+        'path-desc':         'Amostragem GPS ativada por mudança de direção captura fielmente rotundas e curvas fechadas. Amostragem mais densa de 1 m / 2 s para curvas mais pormenorizadas.',
+        'analytics-title':   'Análise de Caminhadas',
+        'analytics-desc':    'O separador Estatísticas mostra gráficos e métricas de todas as caminhadas: distância ao longo do tempo, caminhadas por mês, distribuição de distâncias, recordes pessoais e sequências de dias ativos — filtráveis por intervalo de datas.',
+        'sort-title':        'Ordenar e Filtrar',
+        'sort-desc':         'Ordene o registo de caminhadas por data (mais recente ou mais antiga primeiro) e os trilhos por nome (A → Z ou Z → A). As preferências são memorizadas entre sessões.',
+        'locale-title':      'Português e Inglês',
+        'locale-desc':       'A aplicação usa automaticamente Português ou Inglês consoante o idioma do dispositivo — sem configuração necessária. Datas, números e gráficos adaptam-se ao idioma.',
+        'pause-title':       'Pausar e Retomar',
+        'pause-desc':        'Descanse sem parar a caminhada. O botão Pausar congela o temporizador e a recolha de pontos GPS; Retomar continua exatamente onde ficou. A notificação em segundo plano mostra "Pausado" enquanto descansa.',
+        'drift-title':       'Filtro de Deriva GPS',
+        'drift-desc':        'Ficar parado já não aumenta a distância. Um filtro de janela deslizante de centróide suprime pontos instáveis quando está imóvel, mantendo o percurso limpo e a distância precisa.',
+        'screenshots-heading': 'Capturas de Ecrã',
+        'screenshot1-alt':   'Ecrã de rastreamento com GPS, bússola e meteorologia',
+        'screenshot2-alt':   'Mapa em tempo real com percurso gravado',
+        'screenshot3-alt':   'Browser de trilhos com trilhos GPX importados',
+        'howto-heading':     'Como funciona',
+        'step1-title':       'Instalar o APK',
+        'step1-desc':        'Transfira o APK e permita a instalação de fontes desconhecidas nas definições do Android (Definições → Segurança → Instalar aplicações desconhecidas).',
+        'step2-title':       'Conceder permissão de localização',
+        'step2-desc':        'O Hike pede permissão de localização no primeiro arranque. Escolha "Permitir sempre" para ativar o rastreamento em segundo plano com o ecrã desligado.',
+        'step3-title':       'Sair e iniciar a gravação',
+        'step3-desc':        'Toque no botão de gravação no separador Rastrear. O percurso é guardado automaticamente com pontos de controlo a cada 30 segundos — nada se perde mesmo que a aplicação feche.',
+        'step4-title':       'Rever as caminhadas',
+        'step4-desc':        'Abra o separador Registo para ver todas as caminhadas anteriores. Toque em qualquer entrada para ver o percurso num mapa completo com estatísticas.',
+        'step5-title':       'Explore o seu progresso',
+        'step5-desc':        'Mude para o separador Estatísticas para ver gráficos e métricas de todas as caminhadas. Filtre por intervalo de datas, acompanhe os seus recordes pessoais e verifique a sua sequência de dias ativos.',
+        'oss-heading':       'Grátis e Código Aberto',
+        'oss-subtitle':      'Desenvolvido com Flutter, sem subscrições, sem rastreamento',
+        'oss-desc':          'O Hike é gratuito, sem anúncios, não requer conta e não recolhe dados pessoais. Todos os registos de caminhadas são guardados apenas no seu dispositivo. O código-fonte está disponível no <a href="https://github.com/david12345/hike" target="_blank" rel="noopener">GitHub</a>.',
+        'cta-heading':       'Pronto para a trilha?',
+        'cta-desc':          'Requer Android 6.0 (API 23) ou superior.',
+        'footer-privacy':    'Política de Privacidade',
+        'footer-map':        'Dados de mapa &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores OpenStreetMap</a> &middot; Imagens de satélite &copy; Esri',
+        'footer-weather':    'Dados meteorológicos de <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (API meteorológica open-source)',
+      }
+    };
+
+    /* ─── Locale detection ─────────────────────────────────── */
+    const lang = (navigator.languages && navigator.languages.length
+      ? navigator.languages[0]
+      : navigator.language || 'en').toLowerCase().startsWith('pt') ? 'pt' : 'en';
+
+    /* ─── Apply translations ───────────────────────────────── */
+    const t = translations[lang];
+    document.documentElement.lang = lang;
+    document.title = lang === 'pt'
+      ? 'Hike — Ferramentas essenciais para caminhadas'
+      : 'Hike — Essential tools for hiking';
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (t[key] !== undefined) el.textContent = t[key];
+    });
+
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const key = el.getAttribute('data-i18n-html');
+      if (t[key] !== undefined) el.innerHTML = t[key];
+    });
+
+    document.querySelectorAll('[data-i18n-alt]').forEach(el => {
+      const key = el.getAttribute('data-i18n-alt');
+      if (t[key] !== undefined) el.alt = t[key];
+    });
+
+    /* ─── Live version badge ───────────────────────────────── */
     fetch('https://api.github.com/repos/david12345/hike/releases/latest')
       .then(r => r.json())
       .then(data => {
