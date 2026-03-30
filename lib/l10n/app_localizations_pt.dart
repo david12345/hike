@@ -415,4 +415,23 @@ class AppLocalizationsPt extends AppLocalizations {
   String trailsImportFailed(int count) {
     return '$count falhou ao analisar';
   }
+
+  @override
+  String get trailsExportingDialogLabel => 'A exportar trilhos...';
+
+  @override
+  String get trailsSavingDialogLabel => 'A guardar trilhos...';
+
+  @override
+  String trackErrorCouldNotStart(String detail) {
+    return 'Não foi possível iniciar o registo: $detail';
+  }
+
+  @override
+  String get trackErrorCouldNotSave =>
+      'Não foi possível guardar a caminhada. Tente novamente.';
+
+  @override
+  String get trackErrorCouldNotResume =>
+      'Não foi possível retomar a caminhada. Tente novamente.';
 }

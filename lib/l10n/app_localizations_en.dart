@@ -415,4 +415,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String trailsImportFailed(int count) {
     return '$count failed to parse';
   }
+
+  @override
+  String get trailsExportingDialogLabel => 'Exporting trails...';
+
+  @override
+  String get trailsSavingDialogLabel => 'Saving trails...';
+
+  @override
+  String trackErrorCouldNotStart(String detail) {
+    return 'Could not start recording: $detail';
+  }
+
+  @override
+  String get trackErrorCouldNotSave => 'Could not save hike. Please try again.';
+
+  @override
+  String get trackErrorCouldNotResume =>
+      'Could not resume hike. Please try again.';
 }

@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.0.25+26 |
+| Version | 1.0.26+27 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -302,6 +302,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.0.23 | Full analysis fixes: mounted check, GPX NaN export, HikeDetail localisation, 80 pure-Dart tests, performance quick wins (O(1) segment updates, late final bounds, Polyline cache, AnalyticsViewModel isEmpty), dead code removal, lint rules strengthened, error strings localised |
 | v1.0.24 | Android Auto fixes: shared Flutter engine via FlutterEngineCache, minCarApiLevel 1→2, ACCESS_SURFACE permission, category NAVIGATION→MAPS, currentInstance identity check on reconnect, lockCanvas fallback, AutoDataBridgeService error logging |
 | v1.0.25 | Fix localisation regression: remove attachBaseContext Locale.ENGLISH override from MainActivity so pt/en device-locale routing works correctly |
+| v1.0.26 | Critical fixes: Navigator context bug, localisation regressions (loading dialogs + recording errors), unawaited init, DP stack overflow |
 
 ---
 
@@ -434,3 +435,8 @@ All feature specs are in `docs/features/`:
 | `trails-sort-icon-fix.md` | Fix Trails screen sort icon not updating when order changes: wrap Scaffold in ListenableBuilder for UserPreferencesService |
 | `log-sort-by-start-time.md` | Fix Log screen sort to use startTime comparator instead of Hive insertion order |
 | `analytics-blank-screen-fix.md` | Fix Analytics screen showing blank/zeroed data: surface errorMessage state, detach HikeRecord DTOs for isolate, add zero-bar guards to charts |
+| `fix-log-screen-navigator-context.md` | Fix LogScreen._delete dialog using outer context for Navigator.pop, which pops the screen instead of the dialog |
+| `fix-trails-screen-localisation.md` | Fix hardcoded English strings in TrailsScreen export/save loading dialogs; add trailsExportingDialogLabel and trailsSavingDialogLabel ARB keys |
+| `fix-recording-error-localisation.md` | Fix hardcoded English error strings in HikeRecordingController; pass localised messages at call site via new required parameters |
+| `fix-recording-controller-init.md` | Fix unawaited HikeRecordingController.init() in _HomePageState.initState; surface platform-channel exceptions via _showError |
+| `fix-path-simplifier-iterative.md` | Fix Douglas-Peucker stack overflow on long hikes; replace recursive _dpRecurse with iterative _dpIterative using explicit List<(int,int)> work stack |

@@ -238,12 +238,12 @@ class _TrailsScreenState extends State<TrailsScreen> {
     unawaited(showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const AlertDialog(
+      builder: (ctx) => AlertDialog(
         content: Row(
           children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Exporting trails...'),
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            Text(AppLocalizations.of(ctx).trailsExportingDialogLabel),
           ],
         ),
       ),
@@ -286,12 +286,12 @@ class _TrailsScreenState extends State<TrailsScreen> {
     unawaited(showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const AlertDialog(
+      builder: (ctx) => AlertDialog(
         content: Row(
           children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Saving trails...'),
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            Text(AppLocalizations.of(ctx).trailsSavingDialogLabel),
           ],
         ),
       ),

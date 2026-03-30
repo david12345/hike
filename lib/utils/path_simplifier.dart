@@ -64,7 +64,7 @@ import 'constants.dart';
   final midLat = (lats.first + lats.last) / 2.0;
   final cosLat = cos(midLat * pi / 180.0);
 
-  _dpRecurse(lats, lons, 0, lats.length - 1, epsilon, keep, cosLat);
+  _dpIterative(lats, lons, 0, lats.length - 1, epsilon, keep, cosLat);
 
   final outLats = <double>[];
   final outLons = <double>[];
@@ -77,7 +77,7 @@ import 'constants.dart';
   return (latitudes: outLats, longitudes: outLons);
 }
 
-void _dpRecurse(
+void _dpIterative(
   List<double> lats,
   List<double> lons,
   int start,
@@ -86,31 +86,38 @@ void _dpRecurse(
   List<bool> keep,
   double cosLat,
 ) {
-  if (end <= start + 1) return;
+  // Work stack: each entry is a (start, end) pair to process.
+  final stack = <(int, int)>[(start, end)];
 
-  double maxDist = 0.0;
-  int pivot = start;
+  while (stack.isNotEmpty) {
+    final (s, e) = stack.removeLast();
+    if (e <= s + 1) continue;
 
-  for (var i = start + 1; i < end; i++) {
-    final d = _perpendicularDistanceMetres(
-      lats[i],
-      lons[i],
-      lats[start],
-      lons[start],
-      lats[end],
-      lons[end],
-      cosLat,
-    );
-    if (d > maxDist) {
-      maxDist = d;
-      pivot = i;
+    double maxDist = 0.0;
+    int pivot = s;
+
+    for (var i = s + 1; i < e; i++) {
+      final d = _perpendicularDistanceMetres(
+        lats[i],
+        lons[i],
+        lats[s],
+        lons[s],
+        lats[e],
+        lons[e],
+        cosLat,
+      );
+      if (d > maxDist) {
+        maxDist = d;
+        pivot = i;
+      }
     }
-  }
 
-  if (maxDist > epsilon) {
-    keep[pivot] = true;
-    _dpRecurse(lats, lons, start, pivot, epsilon, keep, cosLat);
-    _dpRecurse(lats, lons, pivot, end, epsilon, keep, cosLat);
+    if (maxDist > epsilon) {
+      keep[pivot] = true;
+      // Push both sub-segments; order does not affect correctness.
+      stack.add((s, pivot));
+      stack.add((pivot, e));
+    }
   }
 }
 

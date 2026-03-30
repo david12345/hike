@@ -96,17 +96,21 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     _recordingController = HikeRecordingController();
-    _recordingController.init();
     _analyticsViewModel = AnalyticsViewModel();
     _analyticsViewModel.init();
     AutoDataBridgeService.instance.init(_recordingController);
     _pendingGuideTrail.addListener(_onPendingGuideTrail);
+
+    // Await init on first frame so ScaffoldMessenger is available for errors.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initRecordingController());
 
     if (widget.unfinishedHike != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _recordingController.resumeFromRecord(
           widget.unfinishedHike!,
           onError: _showError,
+          resumeFailedMessage:
+              AppLocalizations.of(context).trackErrorCouldNotResume,
         );
       });
     }
@@ -139,6 +143,17 @@ class _HomePageState extends State<HomePage> {
     ];
   }
 
+  Future<void> _initRecordingController() async {
+    try {
+      await _recordingController.init();
+    } catch (e) {
+      debugPrint('[HomePage] HikeRecordingController.init() failed: $e');
+      if (mounted) {
+        _showError('Sensor initialisation failed. GPS tracking may be unavailable.');
+      }
+    }
+  }
+
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -163,6 +178,8 @@ class _HomePageState extends State<HomePage> {
       onError: _showError,
       bgLocationDeniedMessage:
           AppLocalizations.of(context).trackBgLocationDenied,
+      startFailedMessage: (detail) =>
+          AppLocalizations.of(context).trackErrorCouldNotStart(detail),
     );
     if (mounted) {
       _onTabChanged(0);

@@ -847,6 +847,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} failed to parse'**
   String trailsImportFailed(int count);
+
+  /// No description provided for @trailsExportingDialogLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting trails...'**
+  String get trailsExportingDialogLabel;
+
+  /// No description provided for @trailsSavingDialogLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving trails...'**
+  String get trailsSavingDialogLabel;
+
+  /// No description provided for @trackErrorCouldNotStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start recording: {detail}'**
+  String trackErrorCouldNotStart(String detail);
+
+  /// No description provided for @trackErrorCouldNotSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save hike. Please try again.'**
+  String get trackErrorCouldNotSave;
+
+  /// No description provided for @trackErrorCouldNotResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not resume hike. Please try again.'**
+  String get trackErrorCouldNotResume;
 }
 
 class _AppLocalizationsDelegate

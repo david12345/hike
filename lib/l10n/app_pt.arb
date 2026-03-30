@@ -206,5 +206,15 @@
     "placeholders": {
       "count": { "type": "int" }
     }
-  }
+  },
+
+  "trailsExportingDialogLabel": "A exportar trilhos...",
+  "trailsSavingDialogLabel": "A guardar trilhos...",
+
+  "trackErrorCouldNotStart": "Não foi possível iniciar o registo: {detail}",
+  "@trackErrorCouldNotStart": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "trackErrorCouldNotSave": "Não foi possível guardar a caminhada. Tente novamente.",
+  "trackErrorCouldNotResume": "Não foi possível retomar a caminhada. Tente novamente."
 }

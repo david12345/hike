@@ -41,11 +41,16 @@ class _TrackScreenState extends State<TrackScreen> {
       onError: _showError,
       bgLocationDeniedMessage:
           AppLocalizations.of(context).trackBgLocationDenied,
+      startFailedMessage: (detail) =>
+          AppLocalizations.of(context).trackErrorCouldNotStart(detail),
     );
   }
 
   Future<void> _stopHike() async {
-    final saved = await _controller.stopRecording(onError: _showError);
+    final saved = await _controller.stopRecording(
+      onError: _showError,
+      saveFailedMessage: AppLocalizations.of(context).trackErrorCouldNotSave,
+    );
     if (saved != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context).trackHikeSaved)),

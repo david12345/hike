@@ -143,6 +143,27 @@ void main() {
   // Epsilon sensitivity
   // ---------------------------------------------------------------------------
 
+  // ---------------------------------------------------------------------------
+  // Pathological stack-overflow regression
+  // ---------------------------------------------------------------------------
+
+  group('stack overflow regression', () {
+    test('18 000-point pathological zigzag does not stack overflow', () {
+      // Alternate lat by a large offset each step so every point is a pivot
+      // candidate, forcing near-linear recursion depth in the naive
+      // implementation.
+      const n = 18000;
+      final lats =
+          List<double>.generate(n, (i) => 40.0 + (i.isEven ? 0.001 : 0.0));
+      final lons = List<double>.generate(n, (i) => i * 0.0001);
+
+      expect(
+        () => simplifyHikeRecord(lats, lons, epsilon: 3.0),
+        returnsNormally,
+      );
+    });
+  });
+
   group('epsilon sensitivity', () {
     test('small epsilon keeps more points than large epsilon on a curved path',
         () {

@@ -206,5 +206,15 @@
     "placeholders": {
       "count": { "type": "int" }
     }
-  }
+  },
+
+  "trailsExportingDialogLabel": "Exporting trails...",
+  "trailsSavingDialogLabel": "Saving trails...",
+
+  "trackErrorCouldNotStart": "Could not start recording: {detail}",
+  "@trackErrorCouldNotStart": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "trackErrorCouldNotSave": "Could not save hike. Please try again.",
+  "trackErrorCouldNotResume": "Could not resume hike. Please try again."
 }

@@ -109,15 +109,15 @@ class _LogScaffold extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: Text(l10n.logDeleteDialogTitle),
         content: Text(l10n.logDeleteDialogContent(hike.name)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(ctx, false),
               child: Text(l10n.commonCancel)),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(ctx, true),
             child: Text(l10n.commonDelete,
                 style: const TextStyle(color: Colors.red)),
           ),

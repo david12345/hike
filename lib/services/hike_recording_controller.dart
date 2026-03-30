@@ -381,6 +381,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   Future<void> startRecording({
     required void Function(String message) onError,
     required String bgLocationDeniedMessage,
+    required String Function(String detail) startFailedMessage,
   }) async {
     _lastError = null;
     try {
@@ -414,7 +415,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
       TrackingState.instance.startRecording();
     } catch (e) {
       _lastError = e.toString();
-      onError('Could not start recording: $e');
+      onError(startFailedMessage(e.toString()));
       notifyListeners();
     }
   }
@@ -533,6 +534,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   /// On failure, [_inFlight] is preserved so the user can retry.
   Future<HikeRecord?> stopRecording({
     required void Function(String message) onError,
+    required String saveFailedMessage,
   }) async {
     // Handle the paused state — subscriptions are already cancelled.
     if (_isPaused) {
@@ -577,7 +579,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
       } catch (e) {
         // Roll back endTime so the record stays "in progress".
         _inFlight!.endTime = null;
-        _lastError = 'Could not save hike. Please try again.';
+        _lastError = saveFailedMessage;
         _isSaving = false;
         onError(_lastError!);
         notifyListeners();
@@ -718,6 +720,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   Future<void> resumeFromRecord(
     HikeRecord record, {
     required void Function(String message) onError,
+    required String resumeFailedMessage,
   }) async {
     try {
       TrackingState.instance.startRecording();
@@ -744,7 +747,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
     } catch (e) {
       TrackingState.instance.stopRecording();
       debugPrint('resumeFromRecord failed: $e');
-      onError('Could not resume hike. Please try again.');
+      onError(resumeFailedMessage);
     }
   }
 
