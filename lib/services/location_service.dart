@@ -51,7 +51,7 @@ class LocationService {
     if (Platform.isAndroid) {
       return Geolocator.getPositionStream(
         locationSettings: AndroidSettings(
-          accuracy: LocationAccuracy.high,
+          accuracy: LocationAccuracy.medium,
           distanceFilter: kStationaryDistanceFilterMetres,
           intervalDuration:
               const Duration(seconds: kStationaryTimeIntervalSeconds),
@@ -66,7 +66,7 @@ class LocationService {
     }
     return Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
+        accuracy: LocationAccuracy.medium,
         distanceFilter: kStationaryDistanceFilterMetres,
       ),
     );

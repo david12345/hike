@@ -32,6 +32,10 @@ class TileCacheService {
       databaseName: 'tile_cache',
       logStatements: false,
     );
+    // Stopgap size cap: evict stale (expired) entries on startup to prevent
+    // unbounded disk growth. A count-based cap requires a custom DAO query
+    // not available in this version of DbCacheStore (tile-cache-size-limit.md).
+    await _store!.clean(staleOnly: true);
   }
 
   /// Returns a [CachedTileProvider] backed by the shared store, or a plain

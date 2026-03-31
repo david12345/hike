@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/hike_record.dart';
 import '../models/weather_data.dart';
+import '../repositories/hike_repository.dart';
 import '../utils/constants.dart';
 import '../utils/path_simplifier.dart';
 import 'compass_service.dart';
@@ -59,6 +60,18 @@ class StepData {
 /// `_HomePageState.dispose()`. Passed to [TrackScreen] as a constructor
 /// parameter.
 class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver {
+  // ---------------------------------------------------------------------------
+  // Repository
+  // ---------------------------------------------------------------------------
+
+  /// The persistence layer used for checkpoint saves and final save.
+  ///
+  /// Defaults to [HikeService.instance]. Pass a test double in unit tests.
+  final HikeRepository _repository;
+
+  HikeRecordingController({HikeRepository? repository})
+      : _repository = repository ?? HikeService.instance;
+
   // ---------------------------------------------------------------------------
   // Observable state
   // ---------------------------------------------------------------------------
@@ -199,20 +212,34 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
     );
     TrackingState.instance.addListener(_onTrackingChanged);
     _onTrackingChanged(); // seed weather if position already available
+    // Weather timer is started only when a recording session begins.
+    // See _startWeatherTimer() / _stopWeatherTimer().
+  }
+
+  // ---------------------------------------------------------------------------
+  // Weather timer helpers (H1: only run during active recording)
+  // ---------------------------------------------------------------------------
+
+  void _startWeatherTimer() {
+    _weatherTimer?.cancel();
     _weatherTimer = Timer.periodic(
       const Duration(minutes: 5),
       (_) {
         if (_lifecycleState == AppLifecycleState.paused ||
             _lifecycleState == AppLifecycleState.hidden ||
             _lifecycleState == AppLifecycleState.inactive) {
-          debugPrint(
-              '[WeatherPoller] skipping fetch — app is backgrounded');
+          debugPrint('[WeatherPoller] skipping fetch — app is backgrounded');
           return;
         }
         _lastWeatherTimerFire = DateTime.now();
         _fetchWeather();
       },
     );
+  }
+
+  void _stopWeatherTimer() {
+    _weatherTimer?.cancel();
+    _weatherTimer = null;
   }
 
   // ---------------------------------------------------------------------------
@@ -408,6 +435,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
       _resetDriftFilter();
       _startPedometerSubscription();
       _startCheckpointTimer();
+      _startWeatherTimer();
 
       _isRecording = true;
       notifyListeners();
@@ -522,7 +550,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
     if (record == null) return;
     _pointsSinceCheckpoint = 0;
     try {
-      await HikeService.save(record);
+      await _repository.saveRecord(record);
     } catch (e) {
       debugPrint('Checkpoint save failed: $e');
     }
@@ -548,6 +576,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
 
     _checkpointTimer?.cancel();
     _checkpointTimer = null;
+    _stopWeatherTimer();
     unawaited(_stepSub?.cancel() ?? Future.value());
 
     try {
@@ -575,7 +604,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
         ..addAll(simplified.longitudes);
 
       try {
-        await HikeService.save(_inFlight!);
+        await _repository.saveRecord(_inFlight!);
       } catch (e) {
         // Roll back endTime so the record stays "in progress".
         _inFlight!.endTime = null;
@@ -627,6 +656,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
     // Checkpoint before subscription is cancelled.
     _checkpointTimer?.cancel();
     _checkpointTimer = null;
+    _stopWeatherTimer();
     await _saveCheckpoint();
     _pointsSinceCheckpoint = 0;
 
@@ -693,6 +723,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
     _startPedometerSubscription();
 
     _startCheckpointTimer();
+    _startWeatherTimer();
 
     _isPaused = false;
 
@@ -741,6 +772,7 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
 
       _startPedometerSubscription();
       _startCheckpointTimer();
+      _startWeatherTimer();
 
       _isRecording = true;
       notifyListeners();
@@ -799,20 +831,23 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   // Compass pause/resume (CR-2)
   // ---------------------------------------------------------------------------
 
-  /// Pauses the compass subscription to conserve magnetometer power.
+  /// Cancels the compass subscription to stop the magnetometer sensor entirely.
   ///
   /// Called by [_HomePageState] when the user navigates away from the
-  /// Track tab.
+  /// Track tab. Cancelling (rather than pausing) ensures the platform sensor
+  /// is stopped; pause() only buffers events in Dart and delivers a burst on
+  /// resume.
   void pauseCompass() {
-    _compassSub?.pause();
+    _compassSub?.cancel();
+    _compassSub = null;
   }
 
-  /// Resumes the compass subscription.
+  /// Re-subscribes to the compass stream.
   ///
   /// Called by [_HomePageState] when the user returns to the Track tab.
   void resumeCompass() {
-    if (_compassSub != null && _compassSub!.isPaused) {
-      _compassSub!.resume();
+    if (_compassSub == null) {
+      _initCompass();
     }
   }
 

@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.0.26+27 |
+| Version | 1.0.27+28 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -303,6 +303,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.0.24 | Android Auto fixes: shared Flutter engine via FlutterEngineCache, minCarApiLevel 1→2, ACCESS_SURFACE permission, category NAVIGATION→MAPS, currentInstance identity check on reconnect, lockCanvas fallback, AutoDataBridgeService error logging |
 | v1.0.25 | Fix localisation regression: remove attachBaseContext Locale.ENGLISH override from MainActivity so pt/en device-locale routing works correctly |
 | v1.0.26 | Critical fixes: Navigator context bug, localisation regressions (loading dialogs + recording errors), unawaited init, DP stack overflow |
+| v1.0.27 | H1-H7 high priority: weather timer gate (only during recording), stationary GPS medium accuracy, compass cancel/resubscribe, TrailsViewModel, LogViewModel, tile cache stale-entry cap, HikeRepository interface |
 
 ---
 
@@ -440,3 +441,10 @@ All feature specs are in `docs/features/`:
 | `fix-recording-error-localisation.md` | Fix hardcoded English error strings in HikeRecordingController; pass localised messages at call site via new required parameters |
 | `fix-recording-controller-init.md` | Fix unawaited HikeRecordingController.init() in _HomePageState.initState; surface platform-channel exceptions via _showError |
 | `fix-path-simplifier-iterative.md` | Fix Douglas-Peucker stack overflow on long hikes; replace recursive _dpRecurse with iterative _dpIterative using explicit List<(int,int)> work stack |
+| `fix-analytics-hike-dto.md` | Stop copying GPS arrays before isolate dispatch; introduce AnalyticsHikeDTO with only the 7 fields read by AnalyticsService.compute() |
+| `fix-tile-cache-stopgap.md` | Stopgap tile cache size cap: call clean(maxCount: 5000) after DbCacheStore init; documents long-term fix in tile-cache-size-limit.md |
+| `fix-trail-card-extraction.md` | Extract _TrailCard stateless widget from TrailsScreen itemBuilder; unify duplicated panel open/close logic |
+| `fix-hike-stats-sheet-extraction.md` | Extract _HikeStatsSheet from HikeDetailScreen DraggableScrollableSheet builder; remove Builder workaround |
+| `fix-weather-timer-gate.md` | Gate weather timer and opportunistic fetch on _isRecording; stop firing network requests when no hike is in progress |
+| `fix-trail-preview-bounds.md` | Fix _TrailPreviewPanelState stale bounds on widget reuse: change late final _bounds/_centroid to mutable and recompute in didUpdateWidget |
+| `fix-guided-hike-business-logic.md` | Move TrackingState.setGuideTrail() call into HikeRecordingController.startGuidedRecording(); replace magic tab index 3 with kTabTrails constant |

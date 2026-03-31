@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show DateTimeRange;
 
 import '../models/hike_record.dart';
+import '../repositories/hike_repository.dart';
 import '../services/analytics_service.dart';
 import '../services/hike_service.dart';
 import '../services/user_preferences_service.dart';
@@ -34,6 +35,18 @@ AnalyticsStats runAnalytics(AnalyticsInput input) {
 /// [_HomePageState.dispose]. Passed to [AnalyticsScreen] as a constructor
 /// parameter so cached stats survive tab switches.
 class AnalyticsViewModel extends ChangeNotifier {
+  // ---------------------------------------------------------------------------
+  // Repository
+  // ---------------------------------------------------------------------------
+
+  /// The persistence layer used to load hike records.
+  ///
+  /// Defaults to [HikeService.instance]. Pass a test double in unit tests.
+  final HikeRepository _repository;
+
+  AnalyticsViewModel({HikeRepository? repository})
+      : _repository = repository ?? HikeService.instance;
+
   // ---------------------------------------------------------------------------
   // Observable state
   // ---------------------------------------------------------------------------
@@ -95,14 +108,14 @@ class AnalyticsViewModel extends ChangeNotifier {
     _customRange = prefs.analyticsCustomRange;
     _prefsLoaded = true;
 
-    HikeService.version.addListener(_onVersionChanged);
+    _repository.versionNotifier.addListener(_onVersionChanged);
 
     _triggerRecompute();
   }
 
   @override
   void dispose() {
-    HikeService.version.removeListener(_onVersionChanged);
+    _repository.versionNotifier.removeListener(_onVersionChanged);
     super.dispose();
   }
 
@@ -172,7 +185,7 @@ class AnalyticsViewModel extends ChangeNotifier {
   void _triggerRecompute() {
     if (!_prefsLoaded) return;
     final gen = ++_computeGeneration;
-    final allHikes = HikeService.getAll();
+    final allHikes = _repository.getAllRecords();
     final filtered = applyFilter(allHikes);
 
     _filteredCount = filtered.length;
