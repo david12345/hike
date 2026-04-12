@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../models/export_format.dart';
 import '../models/imported_trail.dart';
 import 'imported_trail_service.dart';
 
@@ -206,18 +207,30 @@ class TrailsImportExportService {
   // Export (share)
   // ---------------------------------------------------------------------------
 
-  /// Exports [trails] as GPX files via the system share sheet.
+  /// Exports [trails] via the system share sheet.
   ///
+  /// [format] controls whether files are GPX (default) or KML.
   /// Single trail → shares file directly. Multiple trails → bundles into ZIP.
-  Future<ExportResult> exportTrails(List<ImportedTrail> trails) async {
+  Future<ExportResult> exportTrails(
+    List<ImportedTrail> trails, {
+    ExportFormat format = ExportFormat.gpx,
+  }) async {
     if (trails.isEmpty) return const ExportEmpty();
 
     try {
-      final files = await ImportedTrailService.exportAllAsFiles(trails);
+      final files = await ImportedTrailService.exportAllAsFiles(
+        trails,
+        format: format,
+      );
       if (files.isEmpty) return const ExportEmpty();
 
       if (files.length == 1) {
-        await Share.shareXFiles([XFile(files.first.path)]);
+        final mimeType = format == ExportFormat.kml
+            ? 'application/vnd.google-earth.kml+xml'
+            : 'application/gpx+xml';
+        await Share.shareXFiles(
+          [XFile(files.first.path, mimeType: mimeType)],
+        );
       } else {
         final tempDir = await getTemporaryDirectory();
         final zipPath = '${tempDir.path}/hike_trails.zip';
@@ -231,8 +244,10 @@ class TrailsImportExportService {
       }
 
       // Cleanup temp export directory.
-      final exportDir =
-          Directory('${(await getTemporaryDirectory()).path}/gpx_export');
+      final tempDir = await getTemporaryDirectory();
+      final exportDirName =
+          format == ExportFormat.kml ? 'kml_export' : 'gpx_export';
+      final exportDir = Directory('${tempDir.path}/$exportDirName');
       if (await exportDir.exists()) await exportDir.delete(recursive: true);
 
       return const ExportSuccess();
@@ -248,9 +263,12 @@ class TrailsImportExportService {
 
   /// Saves [trails] to a user-chosen folder on device storage.
   ///
+  /// [format] controls whether files are GPX (default) or KML.
   /// On Android < API 29, requests WRITE_EXTERNAL_STORAGE permission first.
   Future<SaveToDeviceResult> saveTrailsToDevice(
-      List<ImportedTrail> trails) async {
+    List<ImportedTrail> trails, {
+    ExportFormat format = ExportFormat.gpx,
+  }) async {
     if (trails.isEmpty) return const SaveToDeviceCancelled();
 
     final directoryPath = await FilePicker.platform.getDirectoryPath();
@@ -272,6 +290,7 @@ class TrailsImportExportService {
       final path = await ImportedTrailService.saveAllToDirectory(
         trails,
         directoryPath,
+        format: format,
       );
       return SaveToDeviceSuccess(path);
     } catch (e) {

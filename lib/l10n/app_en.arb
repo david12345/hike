@@ -211,6 +211,12 @@
   "trailsExportingDialogLabel": "Exporting trails...",
   "trailsSavingDialogLabel": "Saving trails...",
 
+  "exportFormatDialogTitle": "Export as\u2026",
+  "exportFormatGpx": "GPX",
+  "exportFormatKml": "KML",
+  "trailsExportingGpxDialogLabel": "Exporting as GPX\u2026",
+  "trailsExportingKmlDialogLabel": "Exporting as KML\u2026",
+
   "trackErrorCouldNotStart": "Could not start recording: {detail}",
   "@trackErrorCouldNotStart": {
     "placeholders": { "detail": { "type": "String" } }

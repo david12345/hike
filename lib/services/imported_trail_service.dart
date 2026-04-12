@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
+import '../models/export_format.dart';
 import '../models/hike_record.dart';
 import '../models/imported_trail.dart';
 import '../models/osm_trail.dart';
@@ -10,6 +11,7 @@ import '../parsers/gpx_parser.dart';
 import '../parsers/kml_parser.dart';
 import '../repositories/imported_trail_repository.dart';
 import 'gpx_exporter.dart';
+import 'kml_exporter.dart';
 
 /// Facade for importing, persisting, and exporting hiking trails.
 ///
@@ -21,6 +23,7 @@ class ImportedTrailService {
   static const _gpxParser = GpxParser();
   static const _kmlParser = KmlParser();
   static const _exporter = GpxExporter();
+  static const _kmlExporter = KmlExporter();
 
   /// Incremented after every [save] or [delete]. Screens listen to this
   /// to know when to reload from Hive.
@@ -78,17 +81,33 @@ class ImportedTrailService {
   static String exportToGpx(ImportedTrail trail) =>
       _exporter.toGpxString(trail);
 
-  /// Writes each trail as a .gpx file in a temp directory.
-  static Future<List<File>> exportAllAsFiles(List<ImportedTrail> trails) =>
-      _exporter.exportAllAsFiles(trails);
+  /// Writes each trail as a file in a temp directory.
+  ///
+  /// [format] controls whether files are written as .gpx (default) or .kml.
+  static Future<List<File>> exportAllAsFiles(
+    List<ImportedTrail> trails, {
+    ExportFormat format = ExportFormat.gpx,
+  }) {
+    if (format == ExportFormat.kml) {
+      return _kmlExporter.exportAllAsFiles(trails);
+    }
+    return _exporter.exportAllAsFiles(trails);
+  }
 
   /// Saves all [trails] to the given [directoryPath].
   ///
-  /// Single trail: saves as `<sanitized_name>.gpx`.
+  /// Single trail: saves as `<sanitized_name>.gpx` or `.kml`.
   /// Multiple trails: bundles into `hike_trails_<YYYYMMDD_HHmmss>.zip`.
+  ///
+  /// [format] controls whether files are written as .gpx (default) or .kml.
   static Future<String> saveAllToDirectory(
     List<ImportedTrail> trails,
-    String directoryPath,
-  ) =>
-      _exporter.saveAllToDirectory(trails, directoryPath);
+    String directoryPath, {
+    ExportFormat format = ExportFormat.gpx,
+  }) {
+    if (format == ExportFormat.kml) {
+      return _kmlExporter.saveAllToDirectory(trails, directoryPath);
+    }
+    return _exporter.saveAllToDirectory(trails, directoryPath);
+  }
 }

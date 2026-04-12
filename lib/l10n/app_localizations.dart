@@ -860,6 +860,36 @@ abstract class AppLocalizations {
   /// **'Saving trails...'**
   String get trailsSavingDialogLabel;
 
+  /// No description provided for @exportFormatDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as…'**
+  String get exportFormatDialogTitle;
+
+  /// No description provided for @exportFormatGpx.
+  ///
+  /// In en, this message translates to:
+  /// **'GPX'**
+  String get exportFormatGpx;
+
+  /// No description provided for @exportFormatKml.
+  ///
+  /// In en, this message translates to:
+  /// **'KML'**
+  String get exportFormatKml;
+
+  /// No description provided for @trailsExportingGpxDialogLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting as GPX…'**
+  String get trailsExportingGpxDialogLabel;
+
+  /// No description provided for @trailsExportingKmlDialogLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting as KML…'**
+  String get trailsExportingKmlDialogLabel;
+
   /// No description provided for @trackErrorCouldNotStart.
   ///
   /// In en, this message translates to:

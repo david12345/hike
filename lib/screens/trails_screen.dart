@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/export_format.dart';
 import '../models/imported_trail.dart';
 import '../models/osm_trail.dart';
 import '../services/imported_trail_service.dart';
@@ -16,6 +17,7 @@ import '../services/trails_import_export_service.dart';
 import '../services/user_preferences_service.dart';
 import '../utils/constants.dart';
 import '../utils/map_utils.dart';
+import '../widgets/export_format_dialog.dart';
 import '../widgets/map_attribution_widget.dart';
 import 'trail_map_screen.dart';
 
@@ -234,7 +236,13 @@ class _TrailsScreenState extends State<TrailsScreen> {
       return;
     }
 
-    // Show loading dialog
+    // Ask the user which format to export.
+    final format = await showExportFormatDialog(context);
+    if (format == null) return; // cancelled
+
+    if (!mounted) return;
+
+    // Show loading dialog.
     unawaited(showDialog(
       context: context,
       barrierDismissible: false,
@@ -243,14 +251,18 @@ class _TrailsScreenState extends State<TrailsScreen> {
           children: [
             const CircularProgressIndicator(),
             const SizedBox(width: 16),
-            Text(AppLocalizations.of(ctx).trailsExportingDialogLabel),
+            Text(format == ExportFormat.kml
+                ? AppLocalizations.of(ctx).trailsExportingKmlDialogLabel
+                : AppLocalizations.of(ctx).trailsExportingGpxDialogLabel),
           ],
         ),
       ),
     ));
 
-    final result =
-        await TrailsImportExportService.instance.exportTrails(trails);
+    final result = await TrailsImportExportService.instance.exportTrails(
+      trails,
+      format: format,
+    );
 
     if (!mounted) return;
     Navigator.pop(context); // dismiss loading dialog
@@ -282,7 +294,13 @@ class _TrailsScreenState extends State<TrailsScreen> {
       return;
     }
 
-    // Show loading dialog
+    // Ask the user which format to save.
+    final format = await showExportFormatDialog(context);
+    if (format == null) return; // cancelled
+
+    if (!mounted) return;
+
+    // Show loading dialog.
     unawaited(showDialog(
       context: context,
       barrierDismissible: false,
@@ -291,14 +309,18 @@ class _TrailsScreenState extends State<TrailsScreen> {
           children: [
             const CircularProgressIndicator(),
             const SizedBox(width: 16),
-            Text(AppLocalizations.of(ctx).trailsSavingDialogLabel),
+            Text(format == ExportFormat.kml
+                ? AppLocalizations.of(ctx).trailsExportingKmlDialogLabel
+                : AppLocalizations.of(ctx).trailsExportingGpxDialogLabel),
           ],
         ),
       ),
     ));
 
-    final result =
-        await TrailsImportExportService.instance.saveTrailsToDevice(trails);
+    final result = await TrailsImportExportService.instance.saveTrailsToDevice(
+      trails,
+      format: format,
+    );
 
     if (!mounted) return;
     Navigator.pop(context); // dismiss loading dialog

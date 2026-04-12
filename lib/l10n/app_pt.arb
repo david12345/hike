@@ -211,6 +211,12 @@
   "trailsExportingDialogLabel": "A exportar trilhos...",
   "trailsSavingDialogLabel": "A guardar trilhos...",
 
+  "exportFormatDialogTitle": "Exportar como\u2026",
+  "exportFormatGpx": "GPX",
+  "exportFormatKml": "KML",
+  "trailsExportingGpxDialogLabel": "A exportar como GPX\u2026",
+  "trailsExportingKmlDialogLabel": "A exportar como KML\u2026",
+
   "trackErrorCouldNotStart": "Não foi possível iniciar o registo: {detail}",
   "@trackErrorCouldNotStart": {
     "placeholders": { "detail": { "type": "String" } }

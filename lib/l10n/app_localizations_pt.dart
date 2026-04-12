@@ -423,6 +423,21 @@ class AppLocalizationsPt extends AppLocalizations {
   String get trailsSavingDialogLabel => 'A guardar trilhos...';
 
   @override
+  String get exportFormatDialogTitle => 'Exportar como…';
+
+  @override
+  String get exportFormatGpx => 'GPX';
+
+  @override
+  String get exportFormatKml => 'KML';
+
+  @override
+  String get trailsExportingGpxDialogLabel => 'A exportar como GPX…';
+
+  @override
+  String get trailsExportingKmlDialogLabel => 'A exportar como KML…';
+
+  @override
   String trackErrorCouldNotStart(String detail) {
     return 'Não foi possível iniciar o registo: $detail';
   }
