@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.0.27+28 |
+| Version | 1.0.28+29 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -35,7 +35,8 @@ lib/
 │   ├── hike_record.dart            # Hive model: id, name, times, distance, GPS points
 │   ├── hike_record.g.dart          # Hive adapter (generated — do not edit manually)
 │   ├── osm_trail.dart              # OsmTrail model with LatLng geometry
-│   └── weather_data.dart           # WeatherData model with WMO code mapping
+│   ├── weather_data.dart           # WeatherData model with WMO code mapping
+│   └── export_format.dart          # ExportFormat enum: gpx | kml
 ├── parsers/
 │   ├── gpx_parser.dart             # GPX 1.1 XML → List<ImportedTrail> (no Flutter/Hive deps)
 │   └── kml_parser.dart             # KML XML → List<ImportedTrail> (no Flutter/Hive deps)
@@ -64,6 +65,7 @@ lib/
 │   ├── trails_import_export_service.dart # Platform I/O for trail import/export; sealed result types
 │   ├── user_preferences_service.dart # ChangeNotifier singleton: all SharedPreferences (log/trails sort, analytics filter)
 │   ├── gpx_exporter.dart           # GPX serialisation + file I/O + ZIP bundling
+│   ├── kml_exporter.dart           # KML 2.2 serialisation + file I/O + ZIP bundling
 │   ├── foreground_tracking_service.dart # Android foreground service for background GPS; wake lock enabled
 │   ├── intent_handler_service.dart # Android file-open intent handler (GPX/KML/XML)
 │   └── analytics_service.dart      # Pure-Dart: AnalyticsService.compute(), AnalyticsStats, MonthlyBucket, streak helpers
@@ -76,6 +78,7 @@ lib/
     ├── compass_painter.dart        # Shared CompassPainter (CustomPainter) — draws rose + degree at center
     ├── about_content.dart          # Shared content widget for SplashScreen + AboutScreen (centred layout)
     ├── analytics_charts.dart       # MonthlyDistanceChart, DayOfWeekChart, DistributionChart for AnalyticsScreen
+    ├── export_format_dialog.dart   # showExportFormatDialog() → Future<ExportFormat?> (GPX / KML / Cancel)
     └── map_attribution_widget.dart # OSM/OpenTopoMap attribution overlay for map screens
 ```
 
@@ -304,6 +307,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.0.25 | Fix localisation regression: remove attachBaseContext Locale.ENGLISH override from MainActivity so pt/en device-locale routing works correctly |
 | v1.0.26 | Critical fixes: Navigator context bug, localisation regressions (loading dialogs + recording errors), unawaited init, DP stack overflow |
 | v1.0.27 | H1-H7 high priority: weather timer gate (only during recording), stationary GPS medium accuracy, compass cancel/resubscribe, TrailsViewModel, LogViewModel, tile cache stale-entry cap, HikeRepository interface |
+| v1.0.28 | KML export: format-selection dialog before every export, KmlExporter (KML 2.2, lon,lat), ExportFormat enum, format routing through TrailsImportExportService and ImportedTrailService |
 
 ---
 
@@ -448,3 +452,4 @@ All feature specs are in `docs/features/`:
 | `fix-weather-timer-gate.md` | Gate weather timer and opportunistic fetch on _isRecording; stop firing network requests when no hike is in progress |
 | `fix-trail-preview-bounds.md` | Fix _TrailPreviewPanelState stale bounds on widget reuse: change late final _bounds/_centroid to mutable and recompute in didUpdateWidget |
 | `fix-guided-hike-business-logic.md` | Move TrackingState.setGuideTrail() call into HikeRecordingController.startGuidedRecording(); replace magic tab index 3 with kTabTrails constant |
+| `kml-export.md` | KML export: ExportFormat enum, KmlExporter, showExportFormatDialog, format routing through service/screen layers |
