@@ -278,6 +278,10 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
         if (h == null) {
           if (_compassAvailable) {
             _compassAvailable = false;
+            // Clear the last good heading so the dial stops at "--°" instead of
+            // staying frozen at the previous reading.
+            _lastSetHeading = null;
+            headingNotifier.value = null;
             notifyListeners();
           }
           return;
@@ -294,6 +298,8 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
       onError: (_) {
         if (_compassAvailable) {
           _compassAvailable = false;
+          _lastSetHeading = null;
+          headingNotifier.value = null;
           notifyListeners();
         }
       },

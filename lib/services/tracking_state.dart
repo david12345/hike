@@ -194,7 +194,9 @@ class TrackingState extends ChangeNotifier with WidgetsBindingObserver {
     _points.clear();
     _pointsCache = null;
     _currentPosition = null;
-    _ambientAltitude = 0.0; // reset EMA for fresh recording baseline
+    // _ambientAltitude is intentionally preserved across the ambient->recording
+    // transition so the altitude tile doesn't visibly dip to 0 m for one fix.
+    // The EMA continues smoothing into the higher-accuracy recording stream.
     _lastAcceptedFixAt = null;
     _gapJustInserted = false;
     _accuracyBuffer.clear();
@@ -470,10 +472,12 @@ class TrackingState extends ChangeNotifier with WidgetsBindingObserver {
         // so delta is 0 — we must not gate out the session-start fix).
         // Note: _updateFromPosition() has already been called unconditionally at
         // the top of _onRecordingFix, so ambient fields remain current even when
-        // returning early here.
+        // returning early here. Notify listeners so altitude/speed/accuracy
+        // tiles stay live during straight-line walking.
         if (_lastRecordedHeading != null &&
             isMoving &&
             delta < kHeadingChangeDegrees) {
+          notifyListeners();
           return;
         }
       }
