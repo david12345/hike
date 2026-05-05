@@ -8,7 +8,7 @@
 | Description | Essential features for hiking |
 | Path | `/home/dealmeida/hike` |
 | Package | `com.dealmeida.hike` |
-| Version | 1.0.28+29 |
+| Version | 1.0.29+30 |
 | Type | Flutter Android app |
 | GitHub | https://github.com/david12345/hike |
 
@@ -308,6 +308,7 @@ This keeps CLAUDE.md as the single source of truth for future conversations.
 | v1.0.26 | Critical fixes: Navigator context bug, localisation regressions (loading dialogs + recording errors), unawaited init, DP stack overflow |
 | v1.0.27 | H1-H7 high priority: weather timer gate (only during recording), stationary GPS medium accuracy, compass cancel/resubscribe, TrailsViewModel, LogViewModel, tile cache stale-entry cap, HikeRepository interface |
 | v1.0.28 | KML export: format-selection dialog before every export, KmlExporter (KML 2.2, lon,lat), ExportFormat enum, format routing through TrailsImportExportService and ImportedTrailService |
+| v1.0.29 | Track screen accuracy: speed EMA + speedAccuracy gate, stationary zero-clamp, altitude EMA α 0.2→0.1, explicit init flags replacing 0.0 sentinels, dead-band hysteresis on altitudeNotifier (1 m) and speedNotifier (0.028 m/s) |
 
 ---
 
@@ -453,3 +454,4 @@ All feature specs are in `docs/features/`:
 | `fix-trail-preview-bounds.md` | Fix _TrailPreviewPanelState stale bounds on widget reuse: change late final _bounds/_centroid to mutable and recompute in didUpdateWidget |
 | `fix-guided-hike-business-logic.md` | Move TrackingState.setGuideTrail() call into HikeRecordingController.startGuidedRecording(); replace magic tab index 3 with kTabTrails constant |
 | `kml-export.md` | KML export: ExportFormat enum, KmlExporter, showExportFormatDialog, format routing through service/screen layers |
+| `track-altitude-speed-accuracy.md` | Stable Altitude/Velocity tiles on Track screen: speed EMA, speedAccuracy gate, stationary zero-clamp, altitude alpha 0.2 -> 0.1, explicit init flags, dead-band hysteresis on both notifiers |

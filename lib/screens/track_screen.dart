@@ -260,10 +260,17 @@ class _TrackScreenState extends State<TrackScreen> {
                       ValueListenableBuilder<double>(
                         valueListenable: _controller.speedNotifier,
                         builder: (context, speed, _) {
+                          // Zero-clamp: chipset Doppler noise produces 0.05–
+                          // 0.4 m/s false-positives while standing still. Any
+                          // smoothed speed below kStationarySpeedThreshold is
+                          // treated as truly stationary for display only —
+                          // the raw notifier value is unchanged.
+                          final double clamped =
+                              speed < kStationarySpeedThreshold ? 0.0 : speed;
                           final speedValue = _controller.isRecording &&
                                   _controller.gpsAvailable &&
                                   speed >= 0
-                              ? (speed * 3.6).toStringAsFixed(1)
+                              ? (clamped * 3.6).toStringAsFixed(1)
                               : '--';
                           return _buildTile(
                               theme,

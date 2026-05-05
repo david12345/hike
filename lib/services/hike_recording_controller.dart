@@ -182,6 +182,27 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
   static const int _kCheckpointInterval = 10;
 
   // ---------------------------------------------------------------------------
+  // Display dead-band hysteresis state
+  // ---------------------------------------------------------------------------
+
+  /// Last value pushed to [altitudeNotifier], used by the 1 m dead-band.
+  ///
+  /// Null until the first fix is published; reset on start/stop so the next
+  /// session always emits a fresh seed.
+  double? _lastPublishedAltitude;
+
+  /// Last value pushed to [speedNotifier], used by the 0.1 km/h dead-band.
+  double? _lastPublishedSpeed;
+
+  /// Minimum altitude change (metres) before [altitudeNotifier] re-emits.
+  static const double _kAltitudeDeadBandMetres = 1.0;
+
+  /// Minimum speed change (m/s) before [speedNotifier] re-emits.
+  ///
+  /// 0.028 m/s ≈ 0.1 km/h, the displayed precision on the SPEED tile.
+  static const double _kSpeedDeadBandMps = 0.028;
+
+  // ---------------------------------------------------------------------------
   // Stationary drift filter state
   // ---------------------------------------------------------------------------
 
@@ -370,8 +391,24 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
 
   void _onTrackingChanged() {
     accuracyNotifier.value = TrackingState.instance.lastAccuracy;
-    altitudeNotifier.value = TrackingState.instance.ambientAltitude;
-    speedNotifier.value = TrackingState.instance.ambientSpeed;
+
+    // Display dead-band hysteresis: only re-emit altitude / speed when the
+    // smoothed value has crossed a perceptible boundary, eliminating
+    // rounding-edge flicker on the Track tiles.
+    final double newAlt = TrackingState.instance.ambientAltitude;
+    if (_lastPublishedAltitude == null ||
+        (newAlt - _lastPublishedAltitude!).abs() >= _kAltitudeDeadBandMetres) {
+      _lastPublishedAltitude = newAlt;
+      altitudeNotifier.value = newAlt;
+    }
+
+    final double newSpeed = TrackingState.instance.ambientSpeed;
+    if (_lastPublishedSpeed == null ||
+        (newSpeed - _lastPublishedSpeed!).abs() >= _kSpeedDeadBandMps) {
+      _lastPublishedSpeed = newSpeed;
+      speedNotifier.value = newSpeed;
+    }
+
     final pos = TrackingState.instance.ambientPosition;
     if (pos != null) {
       positionNotifier.value = pos;
@@ -433,6 +470,8 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
 
       _pointsSinceCheckpoint = 0;
       _resetDriftFilter();
+      _lastPublishedAltitude = null;
+      _lastPublishedSpeed = null;
       _startPedometerSubscription();
       _startCheckpointTimer();
       _startWeatherTimer();
@@ -632,6 +671,8 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
     _lastWeatherTimerFire = null;
     _lastError = null;
     _resetDriftFilter();
+    _lastPublishedAltitude = null;
+    _lastPublishedSpeed = null;
     notifyListeners();
 
     return saved;
@@ -769,6 +810,8 @@ class HikeRecordingController extends ChangeNotifier with WidgetsBindingObserver
       _stepBaselineSet = false;
       _pointsSinceCheckpoint = 0;
       _resetDriftFilter();
+      _lastPublishedAltitude = null;
+      _lastPublishedSpeed = null;
 
       _startPedometerSubscription();
       _startCheckpointTimer();

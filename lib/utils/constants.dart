@@ -23,6 +23,17 @@ const kPackageName = 'com.dealmeida.hike';
 /// and rejects all cell-only fallback positions (typically 50–500 m).
 const kMaxAcceptableAccuracyMetres = 30.0;
 
+/// Maximum acceptable speed accuracy (metres per second) before the chipset's
+/// speed reading is considered too uncertain to update the displayed value.
+///
+/// `Position.speedAccuracy` reports the chipset's own uncertainty estimate
+/// (Android API >= 26). A reading of `pos.speed = 0.8 m/s` with
+/// `pos.speedAccuracy = 1.5 m/s` means the true speed is somewhere between 0
+/// and 2.3 m/s — too uncertain to display. 1.0 m/s (~3.6 km/h) is a tight
+/// enough bound that surviving readings are within ±0.5 km/h of the true pace
+/// at walking speeds.
+const kMaxAcceptableSpeedAccuracyMps = 1.0;
+
 /// Minimum displacement (metres) between accepted GPS fixes during recording.
 ///
 /// Reduced from 3 m to 1 m to give the heading-change gate in

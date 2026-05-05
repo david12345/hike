@@ -10,9 +10,18 @@ import 'location_service.dart';
 
 /// EMA smoothing factor for GPS altitude readings.
 ///
-/// At alpha = 0.2, each raw fix contributes 20% to the smoothed altitude,
-/// reducing +-10-30 m jitter to a stable, readable value within 3-4 fixes.
-const double _kAltitudeEmaAlpha = 0.2;
+/// At alpha = 0.1, each raw fix contributes 10% to the smoothed altitude.
+/// Halved from the original 0.2 to compensate for the v1.31.0 cadence change
+/// (5 s -> 2 s per fix), which delivered ~2.5x more raw samples per minute
+/// and made the previous alpha visibly jittery.
+const double _kAltitudeEmaAlpha = 0.1;
+
+/// EMA smoothing factor for GPS speed readings.
+///
+/// At alpha = 0.3 each raw fix contributes 30% to the smoothed speed —
+/// a faster-responding curve than altitude (alpha 0.1) because users expect
+/// the speed indicator to react when they start or stop walking.
+const double _kSpeedEmaAlpha = 0.3;
 
 /// Number of consecutive accuracy-gated fixes before emitting a single
 /// consolidated warning to the debug log.
@@ -72,8 +81,17 @@ class TrackingState extends ChangeNotifier with WidgetsBindingObserver {
   /// The last known altitude in metres.
   double _ambientAltitude = 0.0;
 
+  /// Whether the altitude EMA has been seeded with at least one fix.
+  ///
+  /// Replaces the legacy `_ambientAltitude == 0.0` sentinel so that legitimate
+  /// sea-level recordings are not treated as uninitialised.
+  bool _ambientAltitudeInitialised = false;
+
   /// The last known speed in m/s.
   double _ambientSpeed = 0.0;
+
+  /// Whether the speed EMA has been seeded with at least one fix.
+  bool _ambientSpeedInitialised = false;
 
   /// Whether location permission was granted during [init].
   bool _permissionGranted = false;
@@ -194,7 +212,11 @@ class TrackingState extends ChangeNotifier with WidgetsBindingObserver {
     _points.clear();
     _pointsCache = null;
     _currentPosition = null;
-    _ambientAltitude = 0.0; // reset EMA for fresh recording baseline
+    // Reset altitude and speed EMAs for a fresh recording baseline.
+    _ambientAltitude = 0.0;
+    _ambientAltitudeInitialised = false;
+    _ambientSpeed = 0.0;
+    _ambientSpeedInitialised = false;
     _lastAcceptedFixAt = null;
     _gapJustInserted = false;
     _accuracyBuffer.clear();
@@ -244,6 +266,8 @@ class TrackingState extends ChangeNotifier with WidgetsBindingObserver {
     _pointsCache = null;
     _currentPosition = null;
     _activeGuideTrail = null;
+    _ambientAltitudeInitialised = false;
+    _ambientSpeedInitialised = false;
     _lastAcceptedFixAt = null;
     _gapJustInserted = false;
     _accuracyBuffer.clear();
@@ -558,31 +582,38 @@ class TrackingState extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Updates all ambient fields from a raw [Position] event.
   ///
-  /// Altitude is smoothed with an exponential moving average to reduce
-  /// +-10-30 m jitter typical of consumer GPS chipsets.
+  /// Altitude and speed are each smoothed with an exponential moving average
+  /// to reduce ±10–30 m altitude jitter and 30–90% speed jitter typical of
+  /// consumer GPS chipsets. Each EMA is seeded on the first fix of a session
+  /// (tracked via `_ambientAltitudeInitialised` and `_ambientSpeedInitialised`)
+  /// and reset on [startRecording] / [stopRecording].
   ///
-  /// Feature: GPS accuracy field validation (R2, R3).
+  /// Feature: GPS accuracy field validation.
   /// If [Position.altitudeAccuracy] is reported (> 0) and exceeds
-  /// [kMaxAcceptableAccuracyMetres], the EMA update is skipped — the
-  /// previous smoothed altitude is preserved rather than being shifted by
-  /// a low-quality reading. When altitudeAccuracy is 0.0 (unavailable on
-  /// older devices), the EMA is applied unconditionally as before.
+  /// [kMaxAcceptableAccuracyMetres], the altitude EMA is skipped. If
+  /// [Position.speedAccuracy] is reported (> 0) and exceeds
+  /// [kMaxAcceptableSpeedAccuracyMps], the speed EMA is skipped. In both
+  /// cases the previous smoothed value is preserved. When the chipset reports
+  /// `0.0` (unavailable on older devices), the EMA is applied unconditionally.
   void _updateFromPosition(Position pos) {
     _ambientPosition = LatLng(pos.latitude, pos.longitude);
     _ambientHeading = pos.heading;
 
-    // Altitude accuracy gate (R2).
+    // Altitude accuracy gate.
     final bool altitudeIsReliable =
         pos.altitudeAccuracy == 0.0 || // unavailable → assume good
         pos.altitudeAccuracy <= kMaxAcceptableAccuracyMetres;
 
     if (altitudeIsReliable) {
-      _ambientAltitude = _ambientAltitude == 0.0
-          ? pos.altitude
-          : _ambientAltitude * (1 - _kAltitudeEmaAlpha) +
-              pos.altitude * _kAltitudeEmaAlpha;
+      if (!_ambientAltitudeInitialised) {
+        _ambientAltitude = pos.altitude;
+        _ambientAltitudeInitialised = true;
+      } else {
+        _ambientAltitude = _ambientAltitude * (1 - _kAltitudeEmaAlpha) +
+            pos.altitude * _kAltitudeEmaAlpha;
+      }
     } else {
-      // Log poor altitude fix in debug builds (R3).
+      // Log poor altitude fix in debug builds.
       assert(() {
         debugPrint(
           'GPS altitude skipped: altitudeAccuracy '
@@ -594,7 +625,33 @@ class TrackingState extends ChangeNotifier with WidgetsBindingObserver {
       }());
     }
 
-    // Log non-zero accuracy fields in debug builds (R3).
+    // Speed accuracy gate (mirrors the altitude pattern).
+    final bool speedIsReliable =
+        pos.speedAccuracy == 0.0 || // unavailable → assume good
+        pos.speedAccuracy <= kMaxAcceptableSpeedAccuracyMps;
+
+    if (speedIsReliable) {
+      if (!_ambientSpeedInitialised) {
+        _ambientSpeed = pos.speed;
+        _ambientSpeedInitialised = true;
+      } else {
+        _ambientSpeed = _ambientSpeed * (1 - _kSpeedEmaAlpha) +
+            pos.speed * _kSpeedEmaAlpha;
+      }
+    } else {
+      // Log poor speed fix in debug builds.
+      assert(() {
+        debugPrint(
+          'GPS speed skipped: speedAccuracy '
+          '${pos.speedAccuracy.toStringAsFixed(2)} m/s exceeds threshold '
+          '${kMaxAcceptableSpeedAccuracyMps.toStringAsFixed(2)} m/s — '
+          'EMA unchanged at ${_ambientSpeed.toStringAsFixed(2)} m/s',
+        );
+        return true;
+      }());
+    }
+
+    // Log non-zero accuracy fields in debug builds.
     assert(() {
       if (pos.speedAccuracy > 0.0 || pos.altitudeAccuracy > 0.0) {
         debugPrint(
@@ -607,7 +664,6 @@ class TrackingState extends ChangeNotifier with WidgetsBindingObserver {
       return true;
     }());
 
-    _ambientSpeed = pos.speed;
     _lastAccuracy = pos.accuracy;
   }
 }
